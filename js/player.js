@@ -1,119 +1,89 @@
 'use strict';
 
 const player = {
-  row: START_ROW,
-  col: START_COL,
-  prevRow: START_ROW,
-  prevCol: START_COL,
-  t: 1,           // 0 = start of move, 1 = arrived
-  path: [],       // queued steps (BFS result)
-  moving: false,
-
-  // Visual draw position (interpolated between prev and current tile)
-  get visualRow() { return this.prevRow + (this.row - this.prevRow) * this.easeT(this.t); },
-  get visualCol() { return this.prevCol + (this.col - this.prevCol) * this.easeT(this.t); },
-
-  easeT(t) {
-    // Smooth ease-in-out
-    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-  },
+  x: CFG.SPAWN_X,
+  y: CFG.SPAWN_Y,
+  r: CFG.PLAYER_R,
+  // last movement direction for animation
+  dx: 0,
+  dy: 0,
+  stepAnim: 0,
 };
 
-function playerUpdate(dt) {
-  if (player.t < 1) {
-    player.t = Math.min(1, player.t + dt / CFG.MOVE_MS);
-    if (player.t >= 1) {
-      player.t = 1;
-      player.moving = false;
-      onPlayerArrived(player.row, player.col);
+function updatePlayer(dt) {
+  const inp = getInput();
+  const len = Math.hypot(inp.x, inp.y);
+
+  if (len > 0.01) {
+    const nx = inp.x / len;
+    const ny = inp.y / len;
+    const spd = CFG.PLAYER_SPEED * (dt / 1000);
+
+    const mx = nx * spd;
+    const my = ny * spd;
+
+    // Try full move, then slide on each axis
+    if (!isBlocked(player.x + mx, player.y + my, player.r)) {
+      player.x += mx;
+      player.y += my;
+    } else if (!isBlocked(player.x + mx, player.y, player.r)) {
+      player.x += mx;
+    } else if (!isBlocked(player.x, player.y + my, player.r)) {
+      player.y += my;
     }
+
+    player.dx = nx;
+    player.dy = ny;
+    player.stepAnim += spd * 0.08;
   }
 
-  if (player.t >= 1 && player.path.length > 0) {
-    const [nr, nc] = player.path.shift();
-    playerStepTo(nr, nc);
-  }
+  checkEventZones(player.x, player.y);
 }
 
-function playerStepTo(row, col) {
-  player.prevRow = player.row;
-  player.prevCol = player.col;
-  player.row = row;
-  player.col = col;
-  player.t = 0;
-  player.moving = true;
-}
-
-function playerMoveDelta(dr, dc) {
-  const nr = player.row + dr;
-  const nc = player.col + dc;
-  if (isWalkable(nr, nc)) {
-    player.path = [];
-    playerStepTo(nr, nc);
-  }
-}
-
-function playerMoveToTarget(tr, tc) {
-  if (!isWalkable(tr, tc)) return;
-  const path = findPath(player.row, player.col, tr, tc);
-  if (path && path.length > 0) {
-    player.path = path;
-  }
-}
-
-// ── Player drawing ────────────────────────────────────────────────────────────
-
-function drawPlayer(ctx, camX, camY, canvasW, canvasH) {
-  const vr = player.visualRow;
-  const vc = player.visualCol;
-  const { x: sx, y: sy } = worldToScreen(vr, vc, camX, camY, canvasW, canvasH);
-
-  const cx = sx;
-  const cy = sy + CFG.TILE_H / 2;  // center of the tile's top face
+function drawPlayer(ctx) {
+  const { x, y, stepAnim } = player;
+  const bob = Math.sin(stepAnim) * 2.5;
 
   // Shadow
   ctx.beginPath();
-  ctx.ellipse(cx, cy + 5, 14, 7, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + 3, y + 11, 13, 6, 0, 0, Math.PI * 2);
   ctx.fillStyle = 'rgba(0,0,0,0.22)';
   ctx.fill();
 
-  // Body (little dress / figure)
+  // Body
   ctx.beginPath();
-  ctx.ellipse(cx, cy - 10, 9, 14, 0, 0, Math.PI * 2);
-  ctx.fillStyle = '#e86ea0';
+  ctx.ellipse(x, y - 2 + bob, 10, 13, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#e868a0';
   ctx.fill();
-  ctx.strokeStyle = '#c04878';
+  ctx.strokeStyle = '#c04478';
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
   // Head
+  const hx = x, hy = y - 20 + bob;
   ctx.beginPath();
-  ctx.arc(cx, cy - 27, 10, 0, Math.PI * 2);
-  ctx.fillStyle = '#fddbb4';
+  ctx.arc(hx, hy, 11, 0, Math.PI * 2);
+  ctx.fillStyle = '#fddab4';
   ctx.fill();
-  ctx.strokeStyle = '#d4996a';
+  ctx.strokeStyle = '#d49870';
   ctx.lineWidth = 1.5;
-  ctx.stroke();
-
-  // Eyes
-  ctx.fillStyle = '#3a2010';
-  ctx.beginPath();
-  ctx.arc(cx - 3.5, cy - 28, 1.8, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(cx + 3.5, cy - 28, 1.8, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Smile
-  ctx.beginPath();
-  ctx.arc(cx, cy - 25.5, 4, 0.2, Math.PI - 0.2);
-  ctx.strokeStyle = '#c07040';
-  ctx.lineWidth = 1.2;
   ctx.stroke();
 
   // Hair
   ctx.beginPath();
-  ctx.arc(cx, cy - 32, 10, Math.PI, Math.PI * 2);
-  ctx.fillStyle = '#5a3010';
+  ctx.arc(hx, hy - 2, 11, Math.PI, Math.PI * 2);
+  ctx.fillStyle = '#5a2e0e';
   ctx.fill();
+
+  // Eyes
+  ctx.fillStyle = '#2e1808';
+  ctx.beginPath(); ctx.arc(hx - 4, hy - 1, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(hx + 4, hy - 1, 2, 0, Math.PI * 2); ctx.fill();
+
+  // Smile
+  ctx.beginPath();
+  ctx.arc(hx, hy + 2.5, 4, 0.25, Math.PI - 0.25);
+  ctx.strokeStyle = '#b06030';
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
 }

@@ -1,72 +1,101 @@
 'use strict';
 
-// Each key is "row,col", value is an event object.
-// Add more events here for the story!
-const EVENTS = {
-  '11,6': {
-    portrait: '💭',
-    text: 'Tu zaczyna się nasza historia...\n\nDodaj tu pierwsze wspomnienie! ❤️',
-    id: 'memory_1',
+const EVENT_ZONES = [
+  {
+    x:1555, y:1492, r:40, phase:0,
+    portrait:'🏡',
+    text:'Warlubie — tu wszystko się zaczęło.\n\nTo nasz dom. Zawsze tu wrócę, gdziekolwiek będziemy. ❤️',
+    id:'ev_warlubie',
   },
-  '13,5': {
-    portrait: '🌸',
-    text: 'To miejsce zawsze będzie wyjątkowe.\n\nDodaj tu drugą wiadomość! 🌸',
-    id: 'memory_2',
+  {
+    x:1685, y:465, r:42, phase:1.4,
+    portrait:'⚓',
+    text:'Gdańsk — miasto pełne historii.\n\nPamiętasz jak tu razem chodziliśmy? Dodaj tu swoje wspomnienie! 🌊',
+    id:'ev_gdansk',
   },
-  '17,6': {
-    portrait: '⭐',
-    text: 'Dziękuję, że jesteś. Zawsze.\n\nDodaj tu trzecią wiadomość! ⭐',
-    id: 'memory_3',
+  {
+    x:1922, y:185, r:38, phase:2.8,
+    portrait:'🌅',
+    text:'Hel — koniec lądu, początek morza.\n\nStoimy na samym czubku półwyspu. Co widzisz na horyzoncie? 💙',
+    id:'ev_hel',
   },
-};
+  {
+    x:1755, y:1828, r:40, phase:0.9,
+    portrait:'🏰',
+    text:'Grudziądz — miasto zamku nad Wisłą.\n\nDodaj tu swoje wspomnienie z Grudziądza! 🏯',
+    id:'ev_grudziadz',
+  },
+  {
+    x:1630, y:2135, r:40, phase:2.1,
+    portrait:'🎂',
+    text:'Toruń — miasto pierników i Kopernika.\n\nI naszej drugiej rocznicy! 🎉❤️',
+    id:'ev_torun',
+  },
+  {
+    x:2612, y:510, r:38, phase:3.5,
+    portrait:'🌊',
+    text:'Krynica Morska — Zalew Wiślany za plecami, Bałtyk przed nami.\n\nDodaj tu swoją wiadomość! 🐚',
+    id:'ev_krynica',
+  },
+];
 
-const triggeredEvents = new Set();
+const _triggered = new Set();
 
-function onPlayerArrived(row, col) {
-  const key = `${row},${col}`;
-  const event = EVENTS[key];
-  if (event && !triggeredEvents.has(event.id)) {
-    triggeredEvents.add(event.id);
-    showDialog(event.portrait, event.text);
+function checkEventZones(px, py) {
+  for (const ev of EVENT_ZONES) {
+    if (_triggered.has(ev.id)) continue;
+    if (Math.hypot(px-ev.x, py-ev.y) < ev.r) {
+      _triggered.add(ev.id);
+      showDialog(ev.portrait, ev.text);
+      break;
+    }
   }
 }
 
-// Allow re-triggering already-seen events by tapping EVENT tiles while standing on them
-function tryTriggerEvent(row, col) {
-  const key = `${row},${col}`;
-  const event = EVENTS[key];
-  if (event) {
-    showDialog(event.portrait, event.text);
+function drawEventZones(ctx, ts) {
+  for (const ev of EVENT_ZONES) {
+    const done = _triggered.has(ev.id);
+    const a = done ? 0.12 : (0.28 + 0.13*Math.sin(ts*0.0018+ev.phase));
+    ctx.beginPath();
+    ctx.arc(ev.x, ev.y, ev.r+5, 0, Math.PI*2);
+    ctx.fillStyle = done ? `rgba(120,120,120,${a*0.4})` : `rgba(255,215,60,${a*0.45})`;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(ev.x, ev.y, ev.r, 0, Math.PI*2);
+    ctx.fillStyle = done ? `rgba(100,100,100,${a})` : `rgba(255,230,80,${a})`;
+    ctx.fill();
+    ctx.font='18px sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.globalAlpha = done ? 0.4 : 1;
+    ctx.fillText(done ? '✓' : '✦', ev.x, ev.y);
+    ctx.globalAlpha = 1;
   }
 }
 
-// ── Dialog UI ─────────────────────────────────────────────────────────────────
+// ── Dialog ────────────────────────────────────────────────────────────────────
 
-const dialogOverlay = document.getElementById('dialog-overlay');
-const dialogPortrait = document.getElementById('dialog-portrait');
-const dialogText    = document.getElementById('dialog-text');
-const dialogClose   = document.getElementById('dialog-close');
-
-let dialogOpen = false;
+const _dlgOverlay  = document.getElementById('dialog-overlay');
+const _dlgPortrait = document.getElementById('dialog-portrait');
+const _dlgText     = document.getElementById('dialog-text');
+const _dlgClose    = document.getElementById('dialog-close');
+let _dlgOpen = false;
 
 function showDialog(portrait, text) {
-  dialogPortrait.textContent = portrait;
-  // Replace \n with <br> for multi-line support
-  dialogText.innerHTML = text.replace(/\n/g, '<br>');
-  dialogOverlay.classList.remove('hidden');
-  dialogOpen = true;
+  _dlgPortrait.textContent = portrait;
+  _dlgText.innerHTML = text.replace(/\n/g,'<br>');
+  _dlgOverlay.classList.remove('hidden');
+  _dlgOpen = true;
 }
 
 function closeDialog() {
-  dialogOverlay.classList.add('hidden');
-  dialogOpen = false;
+  _dlgOverlay.classList.add('hidden');
+  _dlgOpen = false;
 }
 
-function isDialogOpen() {
-  return dialogOpen;
-}
+function isDialogOpen() { return _dlgOpen; }
 
-dialogClose.addEventListener('click', closeDialog);
-dialogOverlay.addEventListener('click', e => {
-  if (e.target === dialogOverlay) closeDialog();
+_dlgClose.addEventListener('click', closeDialog);
+_dlgOverlay.addEventListener('click', e => { if (e.target===_dlgOverlay) closeDialog(); });
+document.addEventListener('keydown', e => {
+  if (_dlgOpen && (e.key==='Enter'||e.key===' '||e.key==='Escape')) closeDialog();
 });

@@ -7,35 +7,22 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div id="game-container">
-    <canvas id="gameCanvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
-    <div id="dpad">
-      <div class="dpad-row">
-        <button class="dpad-btn" data-dr="-1" data-dc="0">↖</button>
-        <button class="dpad-btn" data-dr="0" data-dc="1">↗</button>
-      </div>
-      <div class="dpad-row">
-        <button class="dpad-btn" data-dr="0" data-dc="-1">↙</button>
-        <button class="dpad-btn" data-dr="1" data-dc="0">↘</button>
-      </div>
-    </div>
-
-    <div id="dialog-overlay" class="hidden">
-      <div id="dialog-box">
-        <div id="dialog-portrait">💬</div>
-        <p id="dialog-text"></p>
-        <button id="dialog-close">Dalej →</button>
-      </div>
-    </div>
-
-    <div id="hud">
-      <div id="save-toast" class="hidden">💾 Zapisano</div>
+  <div id="dialog-overlay" class="hidden">
+    <div id="dialog-box">
+      <div id="dialog-portrait">💬</div>
+      <p id="dialog-text"></p>
+      <button id="dialog-close">Dalej →</button>
     </div>
   </div>
 
+  <div id="hud">
+    <div id="save-toast" class="hidden">💾 Zapisano</div>
+  </div>
+
   <script src="js/config.js"></script>
-  <script src="js/map.js"></script>
+  <script src="js/world.js"></script>
   <script src="js/player.js"></script>
   <script src="js/events.js"></script>
   <script src="js/save.js"></script>

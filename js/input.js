@@ -1,84 +1,121 @@
 'use strict';
 
-// ── Keyboard ──────────────────────────────────────────────────────────────────
+// Keyboard state
+const _keys = {};
+document.addEventListener('keydown', e => { _keys[e.key] = true; });
+document.addEventListener('keyup',   e => { _keys[e.key] = false; });
 
-const KEY_MAP = {
-  ArrowUp:    [-1,  0],  // NW (visual up-right)
-  ArrowDown:  [ 1,  0],  // SE (visual down-left)
-  ArrowLeft:  [ 0, -1],  // NE (visual up-left)
-  ArrowRight: [ 0,  1],  // SW (visual down-right)
-  w: [-1,  0],
-  s: [ 1,  0],
-  a: [ 0, -1],
-  d: [ 0,  1],
-  W: [-1,  0],
-  S: [ 1,  0],
-  A: [ 0, -1],
-  D: [ 0,  1],
+// Virtual joystick state
+const _joy = {
+  active: false,
+  touchId: null,
+  baseX: 0, baseY: 0,
+  knobX: 0, knobY: 0,
+  dx: 0, dy: 0,
 };
 
-document.addEventListener('keydown', e => {
-  if (isDialogOpen()) {
-    if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') closeDialog();
-    return;
-  }
-  const delta = KEY_MAP[e.key];
-  if (delta) {
-    e.preventDefault();
-    playerMoveDelta(delta[0], delta[1]);
-  }
-});
+function attachCanvasEvents(canvas) {
+  canvas.addEventListener('touchstart',  onTouchStart,  { passive: false });
+  canvas.addEventListener('touchmove',   onTouchMove,   { passive: false });
+  canvas.addEventListener('touchend',    onTouchEnd,    { passive: false });
+  canvas.addEventListener('touchcancel', onTouchEnd,    { passive: false });
+}
 
-// ── D-Pad buttons ─────────────────────────────────────────────────────────────
-
-document.querySelectorAll('.dpad-btn').forEach(btn => {
-  const dr = parseInt(btn.dataset.dr, 10);
-  const dc = parseInt(btn.dataset.dc, 10);
-
-  const go = () => {
-    if (!isDialogOpen()) playerMoveDelta(dr, dc);
-  };
-
-  btn.addEventListener('touchstart', e => { e.preventDefault(); go(); }, { passive: false });
-  btn.addEventListener('mousedown',  e => { e.preventDefault(); go(); });
-});
-
-// ── Canvas tap → pathfind ─────────────────────────────────────────────────────
-
-const canvas = document.getElementById('gameCanvas');
-
-canvas.addEventListener('click', handleCanvasTap);
-canvas.addEventListener('touchend', e => {
+function onTouchStart(e) {
   e.preventDefault();
-  const touch = e.changedTouches[0];
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width  / rect.width;
-  const scaleY = canvas.height / rect.height;
-  handleCanvasTap({
-    clientX: touch.clientX,
-    clientY: touch.clientY,
-    _rect: rect,
-    _scale: { x: scaleX, y: scaleY },
-  });
-}, { passive: false });
-
-function handleCanvasTap(e) {
   if (isDialogOpen()) { closeDialog(); return; }
 
-  const rect = e._rect || canvas.getBoundingClientRect();
-  const scaleX = e._scale ? e._scale.x : canvas.width  / rect.width;
-  const scaleY = e._scale ? e._scale.y : canvas.height / rect.height;
+  // Only the first touch activates joystick
+  if (!_joy.active) {
+    const t = e.changedTouches[0];
+    const rect = e.target.getBoundingClientRect();
+    _joy.active = true;
+    _joy.touchId = t.identifier;
+    _joy.baseX = (t.clientX - rect.left) * (e.target.width  / rect.width);
+    _joy.baseY = (t.clientY - rect.top)  * (e.target.height / rect.height);
+    _joy.knobX = _joy.baseX;
+    _joy.knobY = _joy.baseY;
+    _joy.dx = 0;
+    _joy.dy = 0;
+  }
+}
 
-  const sx = (e.clientX - rect.left) * scaleX;
-  const sy = (e.clientY - rect.top)  * scaleY;
+function onTouchMove(e) {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier !== _joy.touchId) continue;
+    const rect = e.target.getBoundingClientRect();
+    const cx = (t.clientX - rect.left) * (e.target.width  / rect.width);
+    const cy = (t.clientY - rect.top)  * (e.target.height / rect.height);
+    const ddx = cx - _joy.baseX;
+    const ddy = cy - _joy.baseY;
+    const len = Math.hypot(ddx, ddy);
+    const max = CFG.JOY_BASE_R;
+    const clamped = Math.min(len, max);
+    _joy.dx = len > 0 ? (ddx / len) * (clamped / max) : 0;
+    _joy.dy = len > 0 ? (ddy / len) * (clamped / max) : 0;
+    _joy.knobX = _joy.baseX + _joy.dx * max;
+    _joy.knobY = _joy.baseY + _joy.dy * max;
+  }
+}
 
-  const { row, col } = screenToWorld(sx, sy, game.camX, game.camY, canvas.width, canvas.height);
+function onTouchEnd(e) {
+  e.preventDefault();
+  for (const t of e.changedTouches) {
+    if (t.identifier === _joy.touchId) {
+      _joy.active = false;
+      _joy.touchId = null;
+      _joy.dx = 0; _joy.dy = 0;
+    }
+  }
+}
 
-  // If tapping the tile the player is already on, re-trigger event
-  if (row === player.row && col === player.col) {
-    tryTriggerEvent(row, col);
+// Returns normalised {x, y} in [-1, 1]
+function getInput() {
+  if (_joy.active) return { x: _joy.dx, y: _joy.dy };
+
+  let x = 0, y = 0;
+  if (_keys['ArrowLeft']  || _keys['a'] || _keys['A']) x -= 1;
+  if (_keys['ArrowRight'] || _keys['d'] || _keys['D']) x += 1;
+  if (_keys['ArrowUp']    || _keys['w'] || _keys['W']) y -= 1;
+  if (_keys['ArrowDown']  || _keys['s'] || _keys['S']) y += 1;
+  return { x, y };
+}
+
+// Draw virtual joystick on the canvas (call from render, after ctx.restore)
+function drawJoystick(ctx, canvasH) {
+  if (!_joy.active) {
+    // Show a faint hint when no touch
+    const hx = CFG.JOY_MARGIN_X;
+    const hy = canvasH - CFG.JOY_MARGIN_Y;
+    ctx.beginPath();
+    ctx.arc(hx, hy, CFG.JOY_BASE_R, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.font = '14px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(255,255,255,0.12)';
+    ctx.fillText('☜', hx, hy);
     return;
   }
 
-  playerMoveToTarget(row, col);
+  // Base
+  ctx.beginPath();
+  ctx.arc(_joy.baseX, _joy.baseY, CFG.JOY_BASE_R, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.10)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.30)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Knob
+  ctx.beginPath();
+  ctx.arc(_joy.knobX, _joy.knobY, CFG.JOY_KNOB_R, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.30)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.50)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
 }
