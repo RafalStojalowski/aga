@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Nasza Przygoda</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="dpad">
+      <div class="dpad-row">
+        <button class="dpad-btn" data-dr="-1" data-dc="0">↖</button>
+        <button class="dpad-btn" data-dr="0" data-dc="1">↗</button>
+      </div>
+      <div class="dpad-row">
+        <button class="dpad-btn" data-dr="0" data-dc="-1">↙</button>
+        <button class="dpad-btn" data-dr="1" data-dc="0">↘</button>
+      </div>
+    </div>
+
+    <div id="dialog-overlay" class="hidden">
+      <div id="dialog-box">
+        <div id="dialog-portrait">💬</div>
+        <p id="dialog-text"></p>
+        <button id="dialog-close">Dalej →</button>
+      </div>
+    </div>
+
+    <div id="hud">
+      <div id="save-toast" class="hidden">💾 Zapisano</div>
+    </div>
+  </div>
+
+  <script src="js/config.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/player.js"></script>
+  <script src="js/events.js"></script>
+  <script src="js/save.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
