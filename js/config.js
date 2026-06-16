@@ -8,9 +8,9 @@ const CFG = {
   PLAYER_R: 13,
   CAMERA_LERP: 0.09,
 
-  // Warlubie — home village (west bank of Wisła)
-  SPAWN_X: 1555,
-  SPAWN_Y: 1535,
+  // Warlubie — home village, on the road just south of the buildings
+  SPAWN_X: 1607,
+  SPAWN_Y: 1625,
 
   JOY_BASE_R: 52,
   JOY_KNOB_R: 24,

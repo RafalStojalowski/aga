@@ -373,12 +373,6 @@ function drawBuilding(ctx, b) {
   ctx.fillStyle='#6a3a14';
   ctx.beginPath(); ctx.roundRect(x+w/2-dw/2,y+h-dh,dw,dh,[3,3,0,0]); ctx.fill();
 
-  if (label) {
-    ctx.font='bold 11px "Segoe UI",sans-serif';
-    ctx.textAlign='center'; ctx.textBaseline='bottom';
-    ctx.fillStyle='rgba(0,0,0,0.5)';  ctx.fillText(label,x+w/2+1,y-3);
-    ctx.fillStyle='#f8f0d8';           ctx.fillText(label,x+w/2,  y-4);
-  }
 }
 
 function drawBuildings(ctx) {
@@ -456,7 +450,6 @@ function isBlocked(x, y, r) {
   if (inSea(x, y, r)) return true;
   if (inLagoon(x, y, r)) return true;
   if (inRiver(x, y, r)) return true;
-  for (const b of BUILDINGS) if (bldgBlocks(b,x,y,r+2)) return true;
   for (const t of TREES) if ((x-t.x)**2+(y-t.y)**2 < (r+t.r*0.52)**2) return true;
   return false;
 }
