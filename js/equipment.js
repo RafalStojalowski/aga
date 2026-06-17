@@ -295,8 +295,8 @@ function _drawCharAt(dy, headTilt, blinkAmt) {
   c.beginPath(); c.ellipse(cx-30,H*0.75,6,5,-0.3,0,Math.PI*2); c.fill();
   c.beginPath(); c.ellipse(cx+30,H*0.75,6,5, 0.3,0,Math.PI*2); c.fill();
 
-  // ── neck ──
-  c.fillStyle=SKIN2; c.fillRect(cx-6,H*0.4,12,H*0.1);
+  // ── neck (hidden under head, no chin bleed) ──
+  c.fillStyle=SKIN2; c.fillRect(cx-5, H*0.44, 10, 5);
 
   // ── HEAD (rotates around its centre) ──
   const hcy = H * 0.295;

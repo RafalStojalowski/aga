@@ -93,18 +93,23 @@ function updateSubmap(dt) {
 
 /* ── Draw (called from game loop) ── */
 function drawSubmapScene(ctx, ts, cw, ch) {
+  /* base clear — handles null-activeSub transition phase */
   ctx.clearRect(0, 0, cw, ch);
 
   if (_activeSub) {
     const sub = _activeSub;
 
-    /* camera lerp */
+    /* fill full canvas with submap background colour (no black edges at world border) */
+    ctx.fillStyle = sub.bgColor || '#507840';
+    ctx.fillRect(0, 0, cw, ch);
+
+    /* camera lerp — allow sub-zero clamp so small worlds still centre */
     const tx = _subPlayer.x - cw / 2;
     const ty = _subPlayer.y - ch / 2;
     _subCamX += (tx - _subCamX) * _SUB_LERP;
     _subCamY += (ty - _subCamY) * _SUB_LERP;
-    _subCamX = Math.max(0, Math.min(sub.w - cw, _subCamX));
-    _subCamY = Math.max(0, Math.min(sub.h - ch, _subCamY));
+    _subCamX = Math.max(Math.min(0, sub.w / 2 - cw / 2), Math.min(sub.w - cw, _subCamX));
+    _subCamY = Math.max(Math.min(0, sub.h / 2 - ch / 2), Math.min(sub.h - ch, _subCamY));
 
     ctx.save();
     ctx.translate(-_subCamX, -_subCamY);

@@ -11,9 +11,10 @@ const SUBMAP_GRUDZIADZ = {
   id:   'grudziadz',
   name: 'Grudziądz',
   w: 1800, h: 1200,
+  bgColor: '#507840',
 
   spawn:         {x: 920, y: 620},
-  mainMapReturn: {x: 1684, y: 1990}, // na drodze DK91, poza strefą kolizji
+  mainMapReturn: {x: 1648, y: 1720}, // DK91 na północ od wejścia do Grudziądza, z dala od rzeki
 
   river: {x: 0, w: 155},
   bank:  {x: 155, w: 58},

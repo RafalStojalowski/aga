@@ -31,8 +31,8 @@ function onTouchStart(e) {
     const rect = e.target.getBoundingClientRect();
     _joy.active = true;
     _joy.touchId = t.identifier;
-    _joy.baseX = (t.clientX - rect.left) * (e.target.width  / rect.width);
-    _joy.baseY = (t.clientY - rect.top)  * (e.target.height / rect.height);
+    _joy.baseX = t.clientX - rect.left;
+    _joy.baseY = t.clientY - rect.top;
     _joy.knobX = _joy.baseX;
     _joy.knobY = _joy.baseY;
     _joy.dx = 0;
@@ -45,8 +45,8 @@ function onTouchMove(e) {
   for (const t of e.changedTouches) {
     if (t.identifier !== _joy.touchId) continue;
     const rect = e.target.getBoundingClientRect();
-    const cx = (t.clientX - rect.left) * (e.target.width  / rect.width);
-    const cy = (t.clientY - rect.top)  * (e.target.height / rect.height);
+    const cx = t.clientX - rect.left;
+    const cy = t.clientY - rect.top;
     const ddx = cx - _joy.baseX;
     const ddy = cy - _joy.baseY;
     const len = Math.hypot(ddx, ddy);

@@ -6,42 +6,54 @@ const ctx    = canvas.getContext('2d');
 let camX = 0, camY = 0;
 let lastTs = null;
 
+/* high-DPI support — all drawing happens in CSS-pixel space */
+let _dpr = 1, _cssW = 0, _cssH = 0;
+
 function init() {
   resizeCanvas();
   window.addEventListener('resize', resizeCanvas);
   attachCanvasEvents(canvas);
   loadGame();
-  camX = player.x - canvas.width  / 2;
-  camY = player.y - canvas.height / 2;
+  camX = player.x - _cssW / 2;
+  camY = player.y - _cssH / 2;
   clampCamera();
   requestAnimationFrame(loop);
 }
 
 function resizeCanvas() {
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
+  _dpr  = window.devicePixelRatio || 1;
+  _cssW = window.innerWidth;
+  _cssH = window.innerHeight;
+  canvas.width  = Math.round(_cssW * _dpr);
+  canvas.height = Math.round(_cssH * _dpr);
+  canvas.style.width  = _cssW + 'px';
+  canvas.style.height = _cssH + 'px';
+  clampCamera();
 }
 
 function clampCamera() {
-  camX = Math.max(0, Math.min(CFG.WORLD_W - canvas.width,  camX));
-  camY = Math.max(0, Math.min(CFG.WORLD_H - canvas.height, camY));
+  camX = Math.max(0, Math.min(CFG.WORLD_W - _cssW, camX));
+  camY = Math.max(0, Math.min(CFG.WORLD_H - _cssH, camY));
 }
 
 function loop(ts) {
   const dt = lastTs === null ? 16 : Math.min(ts - lastTs, 80);
   lastTs = ts;
 
+  /* apply DPR scale once — all subsequent drawing is in CSS-pixel space */
+  ctx.setTransform(_dpr, 0, 0, _dpr, 0, 0);
+
   if (isInSubmap()) {
     if (!isDialogOpen() && !isAngerActive()) updateSubmap(dt);
-    drawSubmapScene(ctx, ts, canvas.width, canvas.height);
-    drawJoystick(ctx, canvas.height);
+    drawSubmapScene(ctx, ts, _cssW, _cssH);
+    drawJoystick(ctx, _cssH);
   } else {
     if (!isDialogOpen() && !isAngerActive()) {
       updatePlayer(dt);
       checkSubmapEntry(player.x, player.y);
     }
-    const tx = player.x - canvas.width  / 2;
-    const ty = player.y - canvas.height / 2;
+    const tx = player.x - _cssW / 2;
+    const ty = player.y - _cssH / 2;
     camX += (tx - camX) * CFG.CAMERA_LERP;
     camY += (ty - camY) * CFG.CAMERA_LERP;
     clampCamera();
@@ -52,7 +64,7 @@ function loop(ts) {
 }
 
 function render(ts) {
-  const w = canvas.width, h = canvas.height;
+  const w = _cssW, h = _cssH;
   ctx.clearRect(0, 0, w, h);
 
   ctx.save();
