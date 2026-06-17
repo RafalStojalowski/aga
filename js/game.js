@@ -31,15 +31,23 @@ function loop(ts) {
   const dt = lastTs === null ? 16 : Math.min(ts - lastTs, 80);
   lastTs = ts;
 
-  if (!isDialogOpen()) updatePlayer(dt);
+  if (isInSubmap()) {
+    if (!isDialogOpen() && !isAngerActive()) updateSubmap(dt);
+    drawSubmapScene(ctx, ts, canvas.width, canvas.height);
+    drawJoystick(ctx, canvas.height);
+  } else {
+    if (!isDialogOpen() && !isAngerActive()) {
+      updatePlayer(dt);
+      checkSubmapEntry(player.x, player.y);
+    }
+    const tx = player.x - canvas.width  / 2;
+    const ty = player.y - canvas.height / 2;
+    camX += (tx - camX) * CFG.CAMERA_LERP;
+    camY += (ty - camY) * CFG.CAMERA_LERP;
+    clampCamera();
+    render(ts);
+  }
 
-  const tx = player.x - canvas.width  / 2;
-  const ty = player.y - canvas.height / 2;
-  camX += (tx - camX) * CFG.CAMERA_LERP;
-  camY += (ty - camY) * CFG.CAMERA_LERP;
-  clampCamera();
-
-  render(ts);
   requestAnimationFrame(loop);
 }
 

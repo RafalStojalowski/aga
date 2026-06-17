@@ -9,6 +9,51 @@
 <body>
   <canvas id="gameCanvas"></canvas>
 
+  <!-- Equip button -->
+  <button id="equip-btn" title="Ekwipunek">👤</button>
+
+  <!-- Equipment overlay -->
+  <div id="equip-overlay" class="hidden">
+    <div id="equip-panel">
+      <button id="equip-close">✕</button>
+
+      <!-- LEFT: character -->
+      <div id="equip-char-panel">
+        <canvas id="char-canvas" width="140" height="185"></canvas>
+        <div id="char-name-label">Agata</div>
+        <div class="stat-block">
+          <div class="stat-row">
+            <span class="stat-name">Zdenerwowanie</span>
+            <span class="stat-num" id="zdenerw-num">0</span>
+          </div>
+          <div class="stat-bar-bg">
+            <div class="stat-bar-fill" id="zdenerw-fill"></div>
+          </div>
+          <div class="stat-state">Stan Agaty: <span id="agata-stan">Mimi</span></div>
+        </div>
+      </div>
+
+      <div class="equip-divider"></div>
+
+      <!-- BOTTOM: cards -->
+      <div id="equip-items-panel">
+        <div id="equip-items-title">Karty Wspomnień</div>
+        <div id="cards-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Anger overlay -->
+  <div id="anger-overlay" class="hidden">
+    <div id="anger-box">
+      <div id="anger-portrait">😤</div>
+      <h2 id="anger-title">Agata wróciła do domu!</h2>
+      <p id="anger-text">Zdenerwowanie osiągnęło poziom krytyczny.<br>Agata jest bardzo zła i potrzebuje chwili spokoju.</p>
+      <button id="anger-close">Wróć do Warlubia</button>
+    </div>
+  </div>
+
+  <!-- Dialog -->
   <div id="dialog-overlay" class="hidden">
     <div id="dialog-box">
       <div id="dialog-portrait">💬</div>
@@ -25,8 +70,11 @@
   <script src="js/world.js"></script>
   <script src="js/player.js"></script>
   <script src="js/events.js"></script>
+  <script src="js/equipment.js"></script>
   <script src="js/save.js"></script>
   <script src="js/input.js"></script>
+  <script src="js/submap.js"></script>
+  <script src="js/submaps/grudziadz.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>
