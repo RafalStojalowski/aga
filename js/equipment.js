@@ -371,11 +371,6 @@ function _drawCharAt(dy, headTilt, blinkAmt) {
   c.strokeStyle='#d08080'; c.lineWidth=1.8; c.lineCap='round';
   c.beginPath(); c.arc(cx,H*0.35,8,0.25,Math.PI-0.25); c.stroke();
 
-  // ── necklace ──
-  c.strokeStyle='#f5c842'; c.lineWidth=1.5;
-  c.beginPath(); c.arc(cx,H*0.42,8,Math.PI*0.15,Math.PI*0.85); c.stroke();
-  c.fillStyle='#f5c842'; c.beginPath(); c.arc(cx,H*0.438,2.5,0,Math.PI*2); c.fill();
-
   c.restore(); // end head tilt
   c.restore(); // end body dy
 }
