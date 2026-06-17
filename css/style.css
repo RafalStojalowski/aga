@@ -2,7 +2,6 @@
   margin: 0; padding: 0;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
-  touch-action: none;
 }
 
 body {
@@ -176,9 +175,10 @@ body {
 #equip-items-panel {
   flex: 1;
   min-height: 0;
-  overflow-y: auto;
+  overflow-y: scroll;
   -webkit-overflow-scrolling: touch;
   touch-action: pan-y;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -211,6 +211,7 @@ body {
   overflow: hidden;
   cursor: pointer;
   position: relative;
+  touch-action: pan-y;
   transition: transform 0.18s ease, box-shadow 0.18s ease;
   box-shadow: 0 2px 10px rgba(0,0,0,0.5);
 }
