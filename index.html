@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Nasza Przygoda</title>
+  <title>2 lata razem</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -11,6 +11,12 @@
 
   <!-- Equip button -->
   <button id="equip-btn" title="Ekwipunek">👤</button>
+
+  <!-- Money HUD -->
+  <div id="money-hud">🪙 <span id="money-amount">0</span> zł</div>
+
+  <!-- MARO HUD -->
+  <div id="maro-hud">🐾 <span id="maro-amount">0</span> MARO</div>
 
   <!-- Equipment overlay -->
   <div id="equip-overlay" class="hidden">
@@ -35,8 +41,10 @@
 
       <div class="equip-divider"></div>
 
-      <!-- BOTTOM: cards -->
+      <!-- BOTTOM: gear + cards -->
       <div id="equip-items-panel">
+        <div id="equip-gear-title" style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.25);text-transform:uppercase;letter-spacing:0.14em;flex-shrink:0;">Ekwipunek</div>
+        <div id="equipped-gear"></div>
         <div id="equip-items-title">Karty Wspomnień</div>
         <div id="cards-grid"></div>
       </div>
@@ -53,6 +61,101 @@
     </div>
   </div>
 
+  <!-- Cat Enclosure Menu -->
+  <div id="cat-overlay" class="hidden">
+    <div id="cat-panel">
+      <div id="cat-header">
+        <span id="cat-title">🐾 Zagroda dla Kotów</span>
+        <button id="cat-close">✕</button>
+      </div>
+      <div id="cat-currency">
+        <span>🪙 <span id="cat-money-disp">0</span> zł</span>
+        <span>🐾 <span id="cat-maro-disp">0</span> MARO</span>
+      </div>
+      <div id="cat-status">Brak kotów w zagrodzie</div>
+      <div id="cat-actions">
+        <button id="cat-roll-btn">🎲 Losuj Kota — 100 zł</button>
+        <button id="cat-feed-btn" disabled>🍣 Nakarm Koty — 100 zł</button>
+      </div>
+      <div id="cat-result"></div>
+    </div>
+  </div>
+
+  <!-- Animacja losowania kota -->
+  <div id="cat-reveal-overlay" class="hidden">
+    <div id="cat-reveal-scene">
+      <div id="cat-reveal-heading">Wylosowano Kota!</div>
+      <div id="cat-reveal-wrap">
+        <div id="cat-reveal-glow"></div>
+        <canvas id="cat-reveal-cvs" width="120" height="140"></canvas>
+      </div>
+      <div id="cat-reveal-name"></div>
+      <div id="cat-reveal-rarity"></div>
+      <div id="cat-reveal-mult"></div>
+      <button id="cat-reveal-close">🐾 Do zagrody!</button>
+    </div>
+  </div>
+
+  <!-- Cypel Helski — losowanie kart -->
+  <div id="cypel-overlay" class="hidden">
+    <div id="cypel-panel">
+      <div id="cypel-header">
+        <span id="cypel-title">🌊 Cypel Helski</span>
+        <button id="cypel-close">✕</button>
+      </div>
+      <div id="cypel-desc">Morze przynosi wspomnienia z głębin...<br>Wylosuj Kartę Wspomnienia za 200 🐾 MARO</div>
+      <div id="cypel-currency">
+        <span>🐾 <span id="cypel-maro-disp">0</span> MARO</span>
+        <span>🃏 <span id="cypel-cards-cnt">0</span>/5 kart</span>
+      </div>
+      <button id="cypel-draw-btn">🌊 Wylosuj Kartę — 200 MARO</button>
+      <div id="cypel-result"></div>
+    </div>
+  </div>
+
+  <!-- Animacja odsłonięcia karty -->
+  <div id="card-reveal-overlay" class="hidden">
+    <div id="card-reveal-scene">
+      <div id="card-reveal-flipper">
+        <div id="card-reveal-front">
+          <canvas id="card-back-cvs" width="160" height="230"></canvas>
+        </div>
+        <div id="card-reveal-back">
+          <div id="card-reveal-content"></div>
+        </div>
+      </div>
+      <div id="card-reveal-label"></div>
+      <button id="card-reveal-close">✨ Do kolekcji!</button>
+    </div>
+  </div>
+
+  <!-- Galeria Forum — sklep Ratajskiego -->
+  <div id="shop-overlay" class="hidden">
+    <div id="shop-panel">
+      <button id="shop-close">✕</button>
+
+      <div id="shop-npc-col">
+        <canvas id="ratajski-cvs" width="120" height="160"></canvas>
+        <div id="ratajski-name">Krzysztof Ratajski</div>
+        <div id="ratajski-sub">„Polskie Orły" 🦅</div>
+        <div id="ratajski-speech"></div>
+      </div>
+
+      <div class="shop-divider"></div>
+
+      <div id="shop-items-col">
+        <div id="shop-tabs">
+          <button class="shop-tab active" data-cat="atak">⚔️ Atak</button>
+          <button class="shop-tab"        data-cat="obrona">🛡️ Obrona</button>
+          <button class="shop-tab"        data-cat="hybryda">⚡ I to i to</button>
+        </div>
+        <div id="shop-equipped-bar">Brak założonych itemów</div>
+        <div id="shop-item-list"></div>
+        <div id="shop-currency-bar">🪙 <span id="shop-currency-amt">0</span> zł</div>
+      </div>
+    </div>
+  </div>
+
   <!-- Dialog -->
   <div id="dialog-overlay" class="hidden">
     <div id="dialog-box">
@@ -62,8 +165,211 @@
     </div>
   </div>
 
+  <!-- Beer Race Minigame — Q4 Gdańsk Armata -->
+  <div id="beer-race-overlay" class="hidden">
+    <div id="beer-race-panel">
+      <div id="beer-race-title">🍺 Zaspiański Wyścig! 🍺</div>
+      <canvas id="beer-race-cvs" width="480" height="290"></canvas>
+      <div id="beer-race-result" class="hidden"></div>
+      <button id="beer-race-close" class="hidden">Dalej →</button>
+    </div>
+  </div>
+
+  <!-- Dark Navigation Minigame — Q5 Gdańsk Collegia -->
+  <div id="dark-nav-overlay" class="hidden">
+    <div id="dark-nav-panel">
+      <canvas id="dark-nav-cvs" width="580" height="340"></canvas>
+      <div id="dark-nav-arrows">
+        <div id="dna-row1"><button id="dna-up">↑</button></div>
+        <div id="dna-row2">
+          <button id="dna-left">←</button>
+          <button id="dna-down">↓</button>
+          <button id="dna-right">→</button>
+        </div>
+      </div>
+      <div id="dark-nav-result" class="hidden">🛏️ Dotarłaś do łóżka!</div>
+      <button id="dark-nav-close" class="hidden">Dalej →</button>
+    </div>
+  </div>
+
+  <!-- Q5 sleep blackout overlay -->
+  <div id="gdn-blackout"></div>
+
+  <!-- Kayak Race Minigame — Q7 Gdańsk Forum -->
+  <div id="kayak-race-overlay" class="hidden">
+    <div id="kayak-race-panel">
+      <div id="kayak-race-title">🛶 Wyścig po rzece w Forum! 🛶</div>
+      <canvas id="kayak-race-cvs" width="480" height="260"></canvas>
+      <div id="kayak-race-hint">KLIKAJ / TAP aby wiosłować!</div>
+      <div id="kayak-race-result" class="hidden"></div>
+      <button id="kayak-race-close" class="hidden">Dalej →</button>
+    </div>
+  </div>
+
+  <!-- MARO Scene Overlay — Q9 Gdańsk Wiadukt -->
+  <div id="maro-scene-overlay" class="hidden">
+    <canvas id="maro-scene-cvs"></canvas>
+    <div id="maro-scene-dialog" class="hidden">
+      <p id="maro-scene-text"></p>
+      <button id="maro-scene-next">Dalej →</button>
+    </div>
+  </div>
+
+  <!-- Proposal Animation Overlay — Q11 Krynica Dyskoteka -->
+  <div id="proposal-overlay" class="hidden">
+    <canvas id="proposal-cvs"></canvas>
+    <div id="proposal-dialog" class="hidden">
+      <p id="proposal-text"></p>
+      <button id="proposal-next">Dalej →</button>
+    </div>
+  </div>
+
+  <!-- Waffle Minigame Overlay — Q12 Hel Gofrownia -->
+  <div id="waffle-overlay" class="hidden">
+    <canvas id="waffle-cvs"></canvas>
+    <div id="waffle-result" class="hidden">
+      <p id="waffle-result-text"></p>
+      <button id="waffle-close">Dalej →</button>
+    </div>
+  </div>
+
+  <!-- Q13 — Giga Turbo Agnieszka Cutscene -->
+  <div id="gta-scene-overlay" class="hidden">
+    <canvas id="gta-scene-cvs"></canvas>
+    <div id="gta-dialog-box" class="hidden">
+      <div id="gta-portrait">👾</div>
+      <p id="gta-dialog-text"></p>
+      <button id="gta-dialog-next">Dalej →</button>
+    </div>
+  </div>
+
+  <!-- Ending Sequence Overlay -->
+  <div id="ending-overlay" class="hidden">
+    <canvas id="ending-cvs"></canvas>
+  </div>
+
   <div id="hud">
     <div id="save-toast" class="hidden">💾 Zapisano</div>
+  </div>
+
+  <!-- Debug menu (toggle with ` key) -->
+  <div id="debug-overlay" class="hidden">
+    <div id="debug-panel">
+      <div id="debug-title">🛠️ Debug — Skocz do Questa</div>
+      <button id="debug-close" onclick="_dbgToggle()">✕</button>
+
+      <div class="dbg-section">
+        <div class="dbg-label">Q1 — Grudziądz</div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('gd','idle')">Start</button>
+          <button onclick="_dbgSet('gd','active')">Active</button>
+          <button onclick="_dbgSet('gd','complete')">Complete</button>
+          <button onclick="_dbgSet('gd','done')">Done</button>
+        </div>
+      </div>
+
+      <div class="dbg-section">
+        <div class="dbg-label">Q2 — Toruń</div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('tr','active')">Active</button>
+          <button onclick="_dbgSet('tr','collecting')">Collecting</button>
+          <button onclick="_dbgSet('tr','ready')">Ready</button>
+          <button onclick="_dbgSet('tr','done')">Done</button>
+        </div>
+      </div>
+
+      <div class="dbg-section">
+        <div class="dbg-label">Q3 — Zagroda (Kotki)</div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('catq','hidden')">Hidden</button>
+          <button onclick="_dbgSet('catq','pending')">Pending</button>
+          <button onclick="_dbgSet('catq','revealed')">Revealed</button>
+          <button onclick="_dbgSet('catq','done')">Done</button>
+        </div>
+      </div>
+
+      <div class="dbg-section">
+        <div class="dbg-label">Q4-Q7, Q9 — Gdańsk</div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('gdn','q4_ready')">Q4 ready</button>
+          <button onclick="_dbgSet('gdn','q4_done')">Q4 done</button>
+          <button onclick="_dbgSet('gdn','q5_play')">Q5 play</button>
+          <button onclick="_dbgSet('gdn','q6_ready')">Q6 ready</button>
+          <button onclick="_dbgSet('gdn','q6_run')">Q6 run</button>
+          <button onclick="_dbgSet('gdn','q6_done')">Q6 done</button>
+        </div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('gdn','q7_ready')">Q7 ready</button>
+          <button onclick="_dbgSet('gdn','q7_shopping')">Q7 shopping</button>
+          <button onclick="_dbgSet('gdn','q7_done')">Q7 done</button>
+          <button onclick="_dbgSet('gdn','q9_ready')">Q9 ready</button>
+          <button onclick="_dbgSet('gdn','q9_done')">Q9 done</button>
+        </div>
+      </div>
+
+      <div class="dbg-section">
+        <div class="dbg-label">Q8 — Hel</div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('hel','q8_ready')">Q8 ready</button>
+          <button onclick="_dbgSet('hel','q8_hunt')">Q8 hunt</button>
+          <button onclick="_dbgSet('hel','q8_return')">Q8 return</button>
+          <button onclick="_dbgSet('hel','q8_shop')">Q8 shop</button>
+          <button onclick="_dbgSet('hel','q8_done')">Q8 done</button>
+        </div>
+      </div>
+
+      <div class="dbg-section">
+        <div class="dbg-label">Q10/Q11 — Krynica Morska</div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('km','q10_ready')">Q10 ready</button>
+          <button onclick="_dbgSet('km','q10_fight')">Q10 fight</button>
+          <button onclick="_dbgSet('km','q10_follow')">Q10 follow</button>
+          <button onclick="_dbgSet('km','q10_done')">Q10 done</button>
+        </div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('km','q11_ready')">Q11 ready</button>
+          <button onclick="_dbgSet('km','q11_search')">Q11 search</button>
+          <button onclick="_dbgSet('km','q11_disco')">Q11 disco</button>
+          <button onclick="_dbgSet('km','q11_done')">Q11 done</button>
+        </div>
+      </div>
+
+      <div class="dbg-section">
+        <div class="dbg-label">Q12 — Hel Gofrownia</div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('km','q12_ready')">Q12 ready</button>
+          <button onclick="_dbgSet('helq12','q12_active')">Q12 active</button>
+          <button onclick="_dbgSet('helq12','q12_done')">Q12 done</button>
+        </div>
+      </div>
+
+      <div class="dbg-section">
+        <div class="dbg-label">Q13 — Molo (Gdańsk)</div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('q13','inactive')">Q13 reset</button>
+          <button onclick="_dbgSet('q13','q13_done')">Q13 done</button>
+        </div>
+      </div>
+
+      <div class="dbg-section">
+        <div class="dbg-label">Q14 — Giga Turbo Agnieszka</div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('q14','q14_ready')">Q14 ready</button>
+          <button onclick="_dbgSet('q14','q14_fight')">Q14 fight</button>
+          <button onclick="_dbgSet('q14','q14_done')">Q14 done</button>
+        </div>
+      </div>
+
+      <div class="dbg-section">
+        <div class="dbg-label">Ending</div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('end','end_ready')">Ending ready</button>
+          <button onclick="_dbgSet('end','end_fade')">Start fade</button>
+        </div>
+      </div>
+
+      <div class="dbg-hint">Skrót klawiszowy: ` (backtick)</div>
+    </div>
   </div>
 
   <script src="js/config.js"></script>
@@ -74,7 +380,15 @@
   <script src="js/save.js"></script>
   <script src="js/input.js"></script>
   <script src="js/submap.js"></script>
+  <script src="js/quest_agnieszka.js"></script>
+  <script src="js/cats.js"></script>
+  <script src="js/shop.js"></script>
   <script src="js/submaps/grudziadz.js"></script>
+  <script src="js/submaps/torun.js"></script>
+  <script src="js/submaps/hel.js"></script>
+  <script src="js/submaps/krynica.js"></script>
+  <script src="js/submaps/gdansk.js"></script>
+  <script src="js/ending.js"></script>
   <script src="js/game.js"></script>
 </body>
 </html>

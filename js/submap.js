@@ -6,6 +6,10 @@ const SUBMAPS = {};
 /* ── Entry triggers on the main map ── */
 const SUBMAP_ENTRIES = [
   {id: 'grudziadz', x: 1755, y: 1828, r: 100},
+  {id: 'torun',     x: 1564, y: 2133, r: 110},
+  {id: 'hel',       x: 1922, y: 178,  r:  80},
+  {id: 'krynica',   x: 2632, y: 527,  r:  85},
+  {id: 'gdansk',    x: 1738, y: 505,  r: 110},
 ];
 
 /* ── State ── */
@@ -24,6 +28,17 @@ let _exitCooldown = 0;    // seconds before re-entry is allowed
 /* ── Public API ── */
 function isInSubmap() {
   return _activeSub !== null || _transState > 0;
+}
+
+/* Natychmiastowe wymuszenie powrotu do mapy świata (używane przez anger-overlay) */
+function forceExitToWorld(wx, wy) {
+  _activeSub   = null;
+  _transState  = 0;
+  _transAlpha  = 0;
+  _pendingId   = null;
+  _exitCooldown = 0;
+  player.x = wx;
+  player.y = wy;
 }
 
 function checkSubmapEntry(px, py) {
@@ -87,8 +102,9 @@ function updateSubmap(dt) {
   /* ── NPC update ── */
   for (const npc of (sub.npcs || [])) _updateNPC(npc, dt);
 
-  /* ── exit cooldown (post-exit, runs on main map side) ── */
-  _exitCooldown = Math.max(0, _exitCooldown - dtS);
+  /* ── Quest update ── */
+  if (sub.updateQuests) sub.updateQuests(dt, _subPlayer);
+
 }
 
 /* ── Draw (called from game loop) ── */
@@ -120,17 +136,26 @@ function drawSubmapScene(ctx, ts, cw, ch) {
     /* NPCs */
     for (const npc of (sub.npcs || [])) _drawNPC(ctx, npc);
 
+    /* Quest world elements (enemies, "!" marker) */
+    if (sub.drawQuests) sub.drawQuests(ctx, ts);
+
     /* player — temporarily borrow the main player object for drawPlayer() */
     const sv = {x: player.x, y: player.y, dx: player.dx, dy: player.dy, stepAnim: player.stepAnim};
     player.x = _subPlayer.x; player.y = _subPlayer.y;
     player.dx = _subPlayer.dx; player.dy = _subPlayer.dy;
     player.stepAnim = _subPlayer.stepAnim;
     drawPlayer(ctx);
+    drawPlayerZdBarOverlay(ctx, _subPlayer.x, _subPlayer.y);
+    if (typeof _agataSpeechAlpha !== 'undefined' && _agataSpeechAlpha > 0)
+      _drawSpeechBubble(ctx, _agataSpeechText, _subPlayer.x, _subPlayer.y, _agataSpeechAlpha);
     player.x = sv.x; player.y = sv.y;
     player.dx = sv.dx; player.dy = sv.dy;
     player.stepAnim = sv.stepAnim;
 
     ctx.restore();
+
+    /* Quest HUD (screen-space: kill counter, hit flash) */
+    if (sub.drawQuestsHUD) sub.drawQuestsHUD(ctx, cw, ch);
 
     /* location label */
     ctx.font = 'bold 13px "Segoe UI",sans-serif';
@@ -153,6 +178,7 @@ function _doEnter(id) {
   const sub = SUBMAPS[id];
   if (!sub) return;
   _activeSub = sub;
+  if (sub.onEnter) sub.onEnter();
   _subPlayer.x = sub.spawn.x;
   _subPlayer.y = sub.spawn.y;
   _subPlayer.dx = 0; _subPlayer.dy = 0; _subPlayer.stepAnim = 0;
@@ -175,12 +201,60 @@ function _doExit() {
 function _subBlocked(sub, x, y, r) {
   /* world bounds */
   if (x - r < 0 || x + r > sub.w || y - r < 0 || y + r > sub.h) return true;
-  /* river — passable on bridges */
+
   const onBridge = (sub.bridges || []).some(
-    br => x > br.x1 && x < br.x2 && y + r > br.y1 && y - r < br.y2
+    br => x + r > br.x1 && x - r < br.x2 && y + r > br.y1 && y - r < br.y2
   );
-  if (!onBridge && x - r < sub.river.w) return true;
-  /* no building collision */
+
+  /* vertical river (Grudziądz style) */
+  if (sub.river && !onBridge && x - r < sub.river.w) return true;
+
+  /* horizontal river band (Toruń style) */
+  if (sub.riverBand && !onBridge) {
+    const rb = sub.riverBand;
+    if (y + r > rb.y && y - r < rb.y + rb.h) return true;
+  }
+
+  /* peninsula shape (Hel) — narrows as y increases */
+  if (sub.peninsulaShapes) {
+    const sh = sub.peninsulaShapes, n = sh.length;
+    let xl = sh[0].xl, xr = sh[0].xr;
+    for (let i = 0; i < n - 1; i++) {
+      if (y >= sh[i].y && y < sh[i+1].y) {
+        const t = (y - sh[i].y) / (sh[i+1].y - sh[i].y);
+        xl = sh[i].xl + t * (sh[i+1].xl - sh[i].xl);
+        xr = sh[i].xr + t * (sh[i+1].xr - sh[i].xr);
+        break;
+      }
+    }
+    if (y >= sh[n-1].y) { xl = sh[n-1].xl; xr = sh[n-1].xr; }
+    if (x - r < xl || x + r > xr) return true;
+  }
+
+  /* diagonal strip (Krynica Morska) — x-parameterised yTop/yBot */
+  if (sub.diagonalStrip) {
+    const ds = sub.diagonalStrip;
+    const yTop = ds.topA + ds.slope * x;
+    const yBot = ds.botA + ds.slope * x;
+    if (y - r < yTop || y + r > yBot) return true;
+  }
+
+  /* sea coast (Gdańsk) — region above coast line is sea */
+  if (sub.seaCoast && !onBridge) {
+    const coast = sub.seaCoast, n = coast.length;
+    if (x >= coast[0].x && x <= coast[n-1].x) {
+      let coastY = coast[n-1].y;
+      for (let i = 0; i < n - 1; i++) {
+        if (x >= coast[i].x && x < coast[i+1].x) {
+          const t = (x - coast[i].x) / (coast[i+1].x - coast[i].x);
+          coastY = coast[i].y + t * (coast[i+1].y - coast[i].y);
+          break;
+        }
+      }
+      if (y - r < coastY) return true;
+    }
+  }
+
   /* park trees */
   for (const t of (sub.parkTrees || [])) {
     if (Math.hypot(x - t.x, y - t.y) < r + t.r) return true;

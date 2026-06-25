@@ -72,6 +72,9 @@ function onTouchEnd(e) {
 
 // Returns normalised {x, y} in [-1, 1]
 function getInput() {
+  /* suppress movement while minigames / cinematic overlays are active */
+  if (typeof _DNAV  !== 'undefined' && _DNAV.active)  return { x: 0, y: 0 };
+  if (typeof _MARO  !== 'undefined' && _MARO.active)  return { x: 0, y: 0 };
   if (_joy.active) return { x: _joy.dx, y: _joy.dy };
 
   let x = 0, y = 0;

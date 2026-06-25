@@ -36,7 +36,7 @@ const SUBMAP_GRUDZIADZ = {
     {x:220,  y:410,  w:470,  h:220,  name:'Alfa Centrum',                    type:'mall',   color:'#8898b8'},
     {x:812,  y:410,  w:134,  h:104,  name:"McDonald's",                      type:'mcd'},
     {x:958,  y:405,  w:282,  h:210,  name:'Park Miejski',                    type:'park'},
-    {x:350,  y:810,  w:700,  h:320,  name:'???',                             type:'mystery'},
+    {x:350,  y:810,  w:700,  h:320,  name:'Zagroda dla Kotów',              type:'catpen'},
   ],
 
   parkTrees: _GD_TREES,
@@ -58,7 +58,10 @@ const SUBMAP_GRUDZIADZ = {
      bodyColor:'#506048', hairColor:'#201a18'},
   ],
 
-  draw(ctx, ts) { _drawGrudziadz(ctx, this, ts); },
+  draw(ctx, ts)                { _drawGrudziadz(ctx, this, ts); },
+  updateQuests(dt, subPlayer) { updateGrudziadzQuests(dt, subPlayer); },
+  drawQuests(ctx, ts)         { drawGrudziadzQuests(ctx, ts); },
+  drawQuestsHUD(ctx, cw, ch)  { drawGrudziadzQuestsHUD(ctx, cw, ch); },
 };
 
 SUBMAPS['grudziadz'] = SUBMAP_GRUDZIADZ;
@@ -130,7 +133,7 @@ function _drawGrudziadz(ctx, sub, ts) {
       case 'tower':   _drawTower(ctx, b);   break;
       case 'park':    _drawPark(ctx, b, sub.parkTrees); break;
       case 'mcd':     _drawMcd(ctx, b);     break;
-      case 'mystery': _drawMystery(ctx, b, ts); break;
+      case 'catpen':  _drawCatEnclosure(ctx, b, ts); break;
       default:        _drawGeneric(ctx, b); break;
     }
   }
@@ -251,57 +254,235 @@ function _drawMcd(ctx, b) {
   ctx.fillStyle='#aa0808'; ctx.fillRect(b.x,b.y,b.w,8);
   ctx.fillStyle='rgba(180,230,255,0.4)';
   ctx.fillRect(b.x+8,b.y+14,30,20); ctx.fillRect(b.x+b.w-38,b.y+14,30,20);
-  ctx.strokeStyle='#f5c000'; ctx.lineWidth=7; ctx.lineCap='round';
-  const ax=b.x+b.w/2, ay=b.y+b.h*0.56;
-  ctx.beginPath(); ctx.arc(ax-15,ay,17,-Math.PI*0.85,0); ctx.stroke();
-  ctx.beginPath(); ctx.arc(ax+15,ay,17,Math.PI,Math.PI*0.15,true); ctx.stroke();
-  ctx.font='bold 10px "Segoe UI",sans-serif'; ctx.textAlign='center';
+  ctx.font = `bold ${Math.round(b.h * 0.58)}px "Arial Black",Impact,sans-serif`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#FFD700';
+  ctx.shadowColor = '#c8a000'; ctx.shadowBlur = 6;
+  ctx.fillText('M', b.x + b.w/2, b.y + b.h * 0.52);
+  ctx.shadowBlur = 0;
+  ctx.font='bold 10px "Segoe UI",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='alphabetic';
   ctx.fillStyle='#fff'; ctx.shadowColor='#000'; ctx.shadowBlur=5;
   ctx.fillText(b.name, b.x+b.w/2, b.y+b.h+14); ctx.shadowBlur=0;
 }
 
-/* ── Mystery zone (cat farm placeholder) ── */
-function _drawMystery(ctx, b, ts) {
-  /* concrete base */
-  ctx.fillStyle='#7a7e7a'; ctx.fillRect(b.x,b.y,b.w,b.h);
-  /* tile lines */
-  ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=1;
-  for (let gx=b.x; gx<b.x+b.w; gx+=40) {
-    ctx.beginPath(); ctx.moveTo(gx,b.y); ctx.lineTo(gx,b.y+b.h); ctx.stroke();
+/* ── Cat Enclosure ── */
+function _drawCatEnclosure(ctx, b, ts) {
+  /* Szary overlay gdy zagroda jeszcze nieodkryta */
+  if (_CAT_Q.state === 'hidden' || _CAT_Q.state === 'pending') {
+    ctx.fillStyle = 'rgba(60,60,70,0.88)'; ctx.fillRect(b.x-6, b.y-14, b.w+12, b.h+28);
+    ctx.strokeStyle = 'rgba(180,180,200,0.35)'; ctx.lineWidth = 2;
+    ctx.strokeRect(b.x-6, b.y-14, b.w+12, b.h+28);
+    /* znak zapytania */
+    ctx.font = `bold ${Math.min(b.w, b.h)*0.55}px "Segoe UI",sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = 'rgba(220,220,240,0.30)';
+    ctx.fillText('?', b.x + b.w/2, b.y + b.h/2);
+    /* cena */
+    ctx.font = 'bold 13px "Segoe UI",sans-serif';
+    ctx.fillStyle = 'rgba(255,215,60,0.85)'; ctx.shadowColor = '#000'; ctx.shadowBlur = 5;
+    ctx.fillText('200 zł żeby odkryć', b.x + b.w/2, b.y + b.h - 28);
+    ctx.shadowBlur = 0;
+    return;
   }
-  for (let gy=b.y; gy<b.y+b.h; gy+=40) {
-    ctx.beginPath(); ctx.moveTo(b.x,gy); ctx.lineTo(b.x+b.w,gy); ctx.stroke();
-  }
-  /* border */
-  ctx.strokeStyle='rgba(255,255,255,0.18)'; ctx.lineWidth=3;
-  ctx.strokeRect(b.x+2,b.y+2,b.w-4,b.h-4);
-  /* atmospheric fog layers */
-  for (let i=0; i<3; i++) {
-    const off = (ts / (800+i*300)) % 1;
-    const fx = b.x + (off * b.w * 1.5) % b.w - b.w*0.2;
-    const fogG = ctx.createRadialGradient(fx, b.y+b.h/2, 0, fx, b.y+b.h/2, b.h*0.6);
-    fogG.addColorStop(0,'rgba(180,180,200,0.18)'); fogG.addColorStop(1,'transparent');
-    ctx.fillStyle=fogG; ctx.fillRect(b.x,b.y,b.w,b.h);
-  }
-  /* big pulsing "?" */
-  const qPulse = 0.75 + Math.sin(ts/800)*0.25;
-  ctx.save();
-  ctx.translate(b.x+b.w/2, b.y+b.h/2);
-  ctx.scale(qPulse, qPulse);
-  ctx.font='bold 120px "Segoe UI",sans-serif';
-  ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillStyle='rgba(255,255,255,0.12)';
-  ctx.fillText('?', 0, 0);
-  ctx.fillStyle='rgba(255,255,255,0.55)';
-  ctx.shadowColor='rgba(200,220,255,0.5)'; ctx.shadowBlur=30;
-  ctx.fillText('?', 0, 0);
+
+  /* grass floor */
+  const fg = ctx.createLinearGradient(b.x, b.y, b.x, b.y+b.h);
+  fg.addColorStop(0,'#4a9238'); fg.addColorStop(1,'#387028');
+  ctx.fillStyle=fg; ctx.fillRect(b.x,b.y,b.w,b.h);
+
+  /* grass tufts (deterministic) */
+  ctx.fillStyle='rgba(35,75,15,0.2)';
+  for (let gx=b.x+18; gx<b.x+b.w-10; gx+=34)
+    for (let gy=b.y+20; gy<b.y+b.h-10; gy+=26) {
+      const ox=((gx*13+gy*7)%18)-9, oy=((gx*7+gy*11)%12)-6;
+      ctx.fillRect(gx+ox,gy+oy,3,7);
+    }
+
+  /* dirt patches */
+  ctx.fillStyle='rgba(130,95,55,0.22)';
+  for (const [dx,dy,dr] of [[b.x+130,b.y+170,32],[b.x+370,b.y+110,26],[b.x+560,b.y+225,24],[b.x+660,b.y+168,20]])
+    { ctx.beginPath(); ctx.ellipse(dx,dy,dr,dr*0.55,0,0,Math.PI*2); ctx.fill(); }
+
+  /* ── Fence ── */
+  /* posts (vertical, every ~55px, span full height) */
+  ctx.fillStyle='#7a5028';
+  for (let px=b.x; px<=b.x+b.w+1; px+=55)
+    ctx.fillRect(px-5, b.y-12, 10, b.h+24);
+  /* horizontal rails: top 3 bands + bottom 3 bands */
+  ctx.fillStyle='#9a6838';
+  for (const ry of [b.y-4, b.y+5, b.y+14])
+    ctx.fillRect(b.x-5, ry, b.w+10, 7);
+  for (const ry of [b.y+b.h-14, b.y+b.h-5, b.y+b.h+4])
+    ctx.fillRect(b.x-5, ry, b.w+10, 7);
+
+  /* ── Sign ── */
+  ctx.font='bold 17px "Segoe UI",sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  ctx.fillStyle='#fff'; ctx.shadowColor='rgba(0,0,0,0.75)'; ctx.shadowBlur=7;
+  ctx.fillText('🐾 Zagroda dla Kotów', b.x+b.w/2, b.y+22);
+
+  /* cat count top-right */
+  ctx.font='bold 11px "Segoe UI",sans-serif'; ctx.textAlign='right';
+  ctx.fillStyle='rgba(255,240,195,0.9)';
+  ctx.fillText(`🐱 ${catState.cats.length}/5`, b.x+b.w-14, b.y+24);
+
+  /* MARO top-left */
+  ctx.textAlign='left'; ctx.fillStyle='rgba(255,215,70,0.9)';
+  ctx.fillText(`MARO: ${catState.maroPoints}`, b.x+14, b.y+24);
   ctx.shadowBlur=0;
+
+  /* empty state hint */
+  if (catState.cats.length === 0) {
+    ctx.font='24px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    for (const [px,py,pr] of [[b.x+150,b.y+190,0],[b.x+350,b.y+225,0.3],[b.x+560,b.y+185,-0.2]]) {
+      ctx.save(); ctx.translate(px,py); ctx.rotate(pr); ctx.fillText('🐾',0,0); ctx.restore();
+    }
+  }
+
+  /* interaction prompt (bouncing above) */
+  const bounce = Math.sin(ts/580)*4;
+  ctx.font='bold 12px "Segoe UI",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+  ctx.fillStyle='rgba(255,238,120,0.88)'; ctx.shadowColor='#000'; ctx.shadowBlur=5;
+  ctx.fillText('[ podejdź aby otworzyć zagrodę ]', b.x+b.w/2, b.y-20+bounce);
+  ctx.shadowBlur=0;
+}
+
+/* ── Mew speech bubble ── */
+function _drawMewBubble(ctx, cx, cy, alpha) {
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  const text = 'Miał miał miał';
+  ctx.font = 'bold 9px "Segoe UI",sans-serif';
+  const tw = ctx.measureText(text).width;
+  const bw = tw + 14, bh = 18;
+  const bx = cx - bw/2, by = cy - 64;
+  ctx.shadowColor='rgba(0,0,0,0.25)'; ctx.shadowBlur=4;
+  ctx.fillStyle = '#fffef0';
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx,by,bw,bh,5);
+  else               ctx.rect(bx,by,bw,bh);
+  ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.beginPath();
+  ctx.moveTo(cx-4,by+bh); ctx.lineTo(cx,by+bh+7); ctx.lineTo(cx+4,by+bh);
+  ctx.closePath(); ctx.fill();
+  ctx.strokeStyle='rgba(0,0,0,0.12)'; ctx.lineWidth=0.8;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(bx,by,bw,bh,5);
+  else               ctx.rect(bx,by,bw,bh);
+  ctx.stroke();
+  ctx.fillStyle='#4a3828'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(text, cx, by+bh/2);
   ctx.restore();
-  /* corner icons */
-  ctx.font='18px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillStyle='rgba(255,255,255,0.2)';
-  for (const [ix,iy] of [[b.x+30,b.y+30],[b.x+b.w-30,b.y+30],[b.x+30,b.y+b.h-30],[b.x+b.w-30,b.y+b.h-30]]) {
-    ctx.fillText('?', ix, iy);
+}
+
+/* ═══════════════════════════════════════════════════════
+   Quest 3: Zagroda dla Kotów
+   'hidden'   – szara przykrywka + "?", pierwsze podejście → dialog + 'pending'
+   'pending'  – szara przykrywka + "!" + "!" na mapie świata, podejście z 200zł → 'revealed'
+   'revealed' – normalna zagroda, kup pierwszego kotka → 'done'
+   'done'     – zagroda działa, quest zakończony
+   ═══════════════════════════════════════════════════════ */
+const _CAT_Q = {
+  state:        'hidden',
+  trigCooldown: 0,
+  firstCatDone: false,
+};
+
+/* ── Quest update / draw (called by submap engine) ──
+   Łączy logikę wrogów (quest_agnieszka.js) z zagrodą (grudziadz.js) */
+function updateGrudziadzQuests(dt, sp) {
+  _updateGrudziadzEnemies(dt, sp);   /* Quest 1: Agnieszki */
+  const dtS = dt / 1000;
+  catState.menuCooldown = Math.max(0, catState.menuCooldown - dtS);
+  _CAT_Q.trigCooldown   = Math.max(0, _CAT_Q.trigCooldown   - dtS);
+
+  /* koty w zagrodzie chodzą tylko gdy zagroda odkryta */
+  if (_CAT_Q.state === 'revealed' || _CAT_Q.state === 'done') {
+    for (const c of catState.cats) {
+      c.stepAnim += dtS * c.speed * 0.08;
+      c._x += c._dir * c.speed * dtS;
+      if (c._x >= c.patrolMax) { c._x = c.patrolMax; c._dir = -1; }
+      if (c._x <= c.patrolMin) { c._x = c.patrolMin; c._dir =  1; }
+      c._mewTimer = (c._mewTimer || 8) - dtS;
+      if (c._mewTimer <= 0) { c._mewAlpha = 1; c._mewTimer = Math.random() * 12 + 7; }
+      if (c._mewAlpha > 0) c._mewAlpha = Math.max(0, c._mewAlpha - dtS * 0.38);
+    }
+  }
+
+  const ex = CAT_ENC.x + CAT_ENC.w / 2;
+  const ey = CAT_ENC.y + CAT_ENC.h / 2;
+  const distCat = Math.hypot(sp.x - ex, sp.y - ey);
+
+  if (_CAT_Q.state === 'hidden' && _CAT_Q.trigCooldown <= 0 && distCat < 145 && !isDialogOpen()) {
+    showDialog('❓', 'To jest miejsce którego jeszcze nikt nie widział na świecie,\nale za 200 złotych będzie można je zobaczyć.');
+    _CAT_Q.state = 'pending';
+    _CAT_Q.trigCooldown = 3;
+    return;
+  }
+
+  if (_CAT_Q.state === 'pending' && _CAT_Q.trigCooldown <= 0 && distCat < 145 && !isDialogOpen()) {
+    if (gameStats.zlote >= 200) {
+      addZlote(-200);
+      _CAT_Q.state = 'revealed';
+      _CAT_Q.trigCooldown = 1;
+      showDialog('🐾', 'Zagroda odkryta! Pieniądze dobrze wydane.\nTeraz Agata musi kupić jednego kotka!');
+    } else {
+      showDialog('💸', 'Za mało złotych! Potrzebujesz 200 zł żeby odkryć to miejsce.');
+      _CAT_Q.trigCooldown = 4;
+    }
+    return;
+  }
+
+  if (_CAT_Q.state === 'revealed') {
+    if (!isCatMenuOpen() && !isDialogOpen() && catState.menuCooldown <= 0 && distCat < 145) {
+      openCatMenu();
+    }
+    /* wykryj zakup pierwszego kotka */
+    if (catState.cats.length >= 1 && !_CAT_Q.firstCatDone) {
+      _CAT_Q.firstCatDone = true;
+      _CAT_Q.state = 'done';
+      setTimeout(() => showDialog('🐱', 'Ale fajny kotek, szkoda że nie mamy takiego w domu.\nAle nie ma co za długo się nad tym zastanawiać, bo armata wzywa!'), 600);
+    }
+    return;
+  }
+
+  if (_CAT_Q.state === 'done') {
+    if (!isCatMenuOpen() && !isDialogOpen() && catState.menuCooldown <= 0 && distCat < 145) {
+      openCatMenu();
+    }
+  }
+}
+
+function drawGrudziadzQuests(ctx, ts) {
+  _drawGrudziadzEnemies(ctx, ts);    /* Quest 1: Agnieszki + "!" + hitFX */
+
+  /* koty rysowane tylko gdy zagroda odkryta */
+  if (_CAT_Q.state === 'revealed' || _CAT_Q.state === 'done') {
+    for (const c of catState.cats) {
+      const type = CAT_TYPES.find(t => t.id === c.typeId) || CAT_TYPES[0];
+      drawCat(ctx, c._x, c._y, type, c.stepAnim, c._dir, c.appearance);
+    }
+    for (const c of catState.cats) {
+      if (c._mewAlpha > 0) _drawMewBubble(ctx, c._x, c._y, c._mewAlpha);
+    }
+  }
+
+  /* "!" nad zagrodą gdy quest 3 w toku */
+  if (_CAT_Q.state === 'pending' || _CAT_Q.state === 'revealed') {
+    const qx = CAT_ENC.x + CAT_ENC.w / 2;
+    const qy = CAT_ENC.y - 22;
+    const pulse = 0.7 + Math.sin(ts * 0.006) * 0.3;
+    ctx.beginPath(); ctx.arc(qx, qy, 22 * pulse, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,80,0,${0.18 * pulse})`; ctx.fill();
+    ctx.beginPath(); ctx.arc(qx, qy, 13, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff4400'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.font = 'bold 16px "Segoe UI",sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff'; ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 3;
+    ctx.fillText('!', qx, qy); ctx.shadowBlur = 0;
   }
 }
 
