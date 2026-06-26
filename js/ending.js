@@ -261,7 +261,12 @@ function _launchEndingOverlay() {
       /* Restart after last message fades out */
       if (_finalePhase === 2) {
         if (_finaleTimer > 2.0) {
-          try { localStorage.clear(); } catch(e) {}
+          try {
+            acMarkGameCompleted();
+            const _acSave = localStorage.getItem(AGATA_CARDS_KEY);
+            localStorage.clear();
+            if (_acSave) localStorage.setItem(AGATA_CARDS_KEY, _acSave);
+          } catch(e) {}
           location.reload();
           return;
         }

@@ -119,6 +119,24 @@ function drawTorunQuests(ctx, ts) {
     }
   }
 
+  /* Karta wyjazd_torun — serduszka nad domkami */
+  if (typeof acIsActive === 'function' && acIsActive('wyjazd_torun')) {
+    const dz = _TR_MEMORY_ZONES[0]; /* torun_domki */
+    const pulse = 0.6 + 0.3 * Math.sin(ts * 0.003);
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.font = '18px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let i = 0; i < 5; i++) {
+      const a = (ts * 0.001 + i * Math.PI * 0.4) % (Math.PI * 2);
+      const r = 40 + 10 * Math.sin(ts * 0.002 + i);
+      ctx.fillText('💝', dz.x + Math.cos(a) * r, dz.y - 30 + Math.sin(a) * r * 0.5);
+    }
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
   drawHitFX(ctx);
 }
 

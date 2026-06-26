@@ -38,6 +38,8 @@ const _KM_RES = {cx: 730, cy: 505}; // centrum Restauracji
 const _KM_KOLEGA_SPAWNS = [
   {x: 618, y: 455},
   {x: 798, y: 492},
+  {x: 540, y: 520},
+  {x: 870, y: 435},
 ];
 
 const _KM_ST = {
@@ -52,10 +54,11 @@ const _KM_ST = {
 };
 
 function _spawnKolegas() {
+  const ostroda = typeof acIsActive === 'function' && acIsActive('ostroda');
   _KM_ST.kolegas = _KM_KOLEGA_SPAWNS.map((pos, i) => ({
     id: i,
     _x: pos.x, _y: pos.y,
-    hp: 120, maxHp: 120,
+    hp: ostroda ? 220 : 120, maxHp: ostroda ? 220 : 120,
     alive: true,
     speed: 90,
     stepAnim: 0, _dir: 1,
@@ -74,6 +77,7 @@ function updateKrynicaQuests(dt, sp) {
   const dtS = dt / 1000;
 
   if (!st.spawned) { _spawnKolegas(); st.spawned = true; }
+  _updateKrokodyle(dt, sp);
 
   st.playerHitFlash = Math.max(0, st.playerHitFlash - dtS * 3);
   st.domCooldown    = Math.max(0, st.domCooldown    - dtS);
@@ -185,7 +189,8 @@ function updateKrynicaQuests(dt, sp) {
       en._y = Math.max(bc.yTop+15, Math.min(bc.yBot-15, en._y));
       if (dist < 60) {
         en.attackTimer += dtS;
-        if (en.attackTimer >= 1) { en.attackTimer = 0; applyZdenerwowanie(12); st.playerHitFlash = 1; }
+        const dmgMult = (typeof acIsActive==='function'&&acIsActive('ostroda')) ? 2.2 : 1;
+        if (en.attackTimer >= 1) { en.attackTimer = 0; applyZdenerwowanie(12 * dmgMult * (typeof aceAtakMult==='function'?aceAtakMult():1)); st.playerHitFlash = 1; }
       } else { en.attackTimer = 0; }
     } else {
       en.patrolTimer += dtS;
@@ -233,7 +238,59 @@ function updateKrynicaQuests(dt, sp) {
   }
 }
 
+/* ── Krokodyle ─────────────────────────────────────── */
+let _KM_KROKS = [];
+let _KM_KROK_CD = 0;
+
+function _updateKrokodyle(dt, sp) {
+  if (typeof acIsActive !== 'function' || !acIsActive('krokodyle')) { _KM_KROKS = []; return; }
+  const dtS = dt / 1000;
+  _KM_KROK_CD = Math.max(0, _KM_KROK_CD - dtS);
+  if (_KM_KROK_CD <= 0 && _KM_KROKS.filter(k=>k.alive).length < 3) {
+    _KM_KROK_CD = 8 + Math.random() * 10;
+    const sx = 100 + Math.random() * 1400;
+    const coastY = 170 + 0.22 * sx;
+    _KM_KROKS.push({ x: sx, y: Math.max(10, coastY - 40 - Math.random()*80),
+      hp: 300, maxHp: 300, alive: true, atkT: 0, ang: Math.random()*Math.PI*2 });
+  }
+  for (const k of _KM_KROKS) {
+    if (!k.alive) continue;
+    const dx = sp.x - k.x, dy = sp.y - k.y;
+    const dist = Math.hypot(dx, dy);
+    const spd = 70;
+    if (dist > 8) { k.x += (dx/dist)*spd*dtS; k.y += (dy/dist)*spd*dtS; k.ang = Math.atan2(dy, dx); }
+    if (dist < 55) {
+      k.atkT += dtS;
+      if (k.atkT >= 1.2) { k.atkT = 0; applyZdenerwowanie(25 * (typeof aceAtakMult==='function'?aceAtakMult():1)); }
+    } else { k.atkT = 0; }
+    /* player can kill it */
+    if (k.hp <= 0) { k.alive = false; if (typeof addZlote==='function') addZlote(200); }
+  }
+  _KM_KROKS = _KM_KROKS.filter(k=>k.alive || k.hp > 0);
+}
+
+function _drawKrokodyle(ctx, ts) {
+  if (typeof acIsActive !== 'function' || !acIsActive('krokodyle')) return;
+  for (const k of _KM_KROKS) {
+    if (!k.alive) continue;
+    ctx.save();
+    ctx.translate(k.x, k.y);
+    ctx.rotate(k.ang);
+    ctx.font='22px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('🐊', 0, 0);
+    ctx.restore();
+    /* HP bar */
+    const bw = 36, bh = 5;
+    ctx.fillStyle='#222'; ctx.fillRect(k.x-bw/2, k.y-26, bw, bh);
+    ctx.fillStyle='#22cc22'; ctx.fillRect(k.x-bw/2, k.y-26, bw*(k.hp/k.maxHp), bh);
+  }
+}
+
+/* ── expose krokodyle for hit detection from input.js ── */
+function getKMKroks() { return _KM_KROKS; }
+
 function drawKrynicaQuests(ctx, ts) {
+  _drawKrokodyle(ctx, ts);
   for (const en of _KM_ST.kolegas) if (en.alive) _drawKolega(ctx, en, ts);
   drawHitFX(ctx);
   /* Q10: Rafał following player in Krynica */

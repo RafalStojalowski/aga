@@ -138,6 +138,7 @@ function drawSubmapScene(ctx, ts, cw, ch) {
 
     /* Quest world elements (enemies, "!" marker) */
     if (sub.drawQuests) sub.drawQuests(ctx, ts);
+    if (typeof aceFxDrawSub === 'function') aceFxDrawSub(ctx, sub.id, ts);
 
     /* player — temporarily borrow the main player object for drawPlayer() */
     const sv = {x: player.x, y: player.y, dx: player.dx, dy: player.dy, stepAnim: player.stepAnim};

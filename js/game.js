@@ -70,6 +70,9 @@ function loop(ts) {
     }
   }
 
+  /* Karta-efekty tick */
+  if (typeof aceFxTick === 'function') aceFxTick(dt, isInSubmap());
+
   /* Agata speech bubbles */
   _agataSpeechTimer -= dt / 1000;
   if (_agataSpeechTimer <= 0 && !isDialogOpen() && !isAngerActive()) {
@@ -279,6 +282,10 @@ function _dbgSet(quest, state) {
       }
       player.x = CFG.SPAWN_X; player.y = CFG.SPAWN_Y;
       break;
+    case 'ac':
+      if (typeof acSetGameCompleted === 'function') acSetGameCompleted(state === 'on');
+      player.x = 1738; player.y = 505; /* teleport do Gdańska przy Ergo Arena */
+      break;
   }
   _dbgToggle();
 }
@@ -304,6 +311,7 @@ function render(ts) {
     ctx.globalAlpha = 1;
   }
   drawPlayerZdBarOverlay(ctx, player.x, player.y);
+  if (typeof aceFxDraw === 'function') aceFxDraw(ctx, ts);
 
   /* Healing aura visual — orbits around Agata */
   const wDist2 = Math.hypot(player.x - CFG.SPAWN_X, player.y - CFG.SPAWN_Y);

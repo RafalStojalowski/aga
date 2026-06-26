@@ -288,7 +288,7 @@ function _dnavUpdate(dt) {
       if (!_DNAV.hitObjects.has(i)) {
         _DNAV.hitObjects.add(i);
         _DNAV.hitFlash = 0.65;
-        if (typeof applyZdenerwowanie === 'function') applyZdenerwowanie(5);
+        if (typeof applyZdenerwowanie === 'function') applyZdenerwowanie(5 * (typeof aceAtakMult==='function'?aceAtakMult():1));
       }
       const ang = Math.atan2(ny - ob.y, nx - ob.x);
       nx = ob.x + Math.cos(ang) * (ob.r + 13);
@@ -943,7 +943,14 @@ function updateGdanskQuests(dt, sp) {
   const ch = (key, x, y, r, portrait, text) => {
     if (_GDN[key] <= 0 && Math.hypot(sp.x - x, sp.y - y) < r) { showDialog(portrait, text); _GDN[key] = 10; }
   };
-  ch('ergo',     1093,  144,  72, '🏟️', 'Ergo Arena!\nHala widowiskowo-sportowa na granicy Gdańska i Sopotu.\nKoncerty, hokej, boxing — tu zawsze coś się dzieje! 🎸');
+  /* Ergo Arena — karty Agaty po ukończeniu gry; wcześniej info */
+  if (acCanAccess() && !isAgataCardBrowserOpen()) {
+    if (_GDN.ergo <= 0 && Math.hypot(sp.x - 1093, sp.y - 144) < 72) {
+      openAgataCardBrowser(); _GDN.ergo = 30;
+    }
+  } else {
+    ch('ergo', 1093, 144, 72, '🏟️', 'Ergo Arena!\nHala widowiskowo-sportowa na granicy Gdańska i Sopotu.\nKoncerty, hokej, boxing — tu zawsze coś się dzieje! 🎸');
+  }
   /* Q13 Molo trigger (replaces flavour info) */
   _GDN_Q13.trigCD = Math.max(0, _GDN_Q13.trigCD - dtS);
   if (_GDN_Q13.state === 'inactive' && _GDN_Q13.trigCD <= 0 && Math.hypot(sp.x - 2552, sp.y - 360) < 72) {
@@ -961,6 +968,7 @@ function updateGdanskQuests(dt, sp) {
   }
   ch('pge',      3698,  232,  92, '⚽', 'PGE Arena Gdańsk!\nStadion wybudowany na Euro 2012.\nZaprojektowany z inspiracji bursztynem — złoty klejnot Gdańska! 🏆');
   ch('polit',    2080, 1525,  76, '🎓', 'Politechnika Gdańska!\nZałożona w 1904 roku, jedna z najlepszych uczelni technicznych PL.\nAlbert Einstein wykładał tu fizykę w 1923! 📐');
+  if (typeof aceUpdateChessStalls === 'function') aceUpdateChessStalls(sp);
   ch('przymorze', 703,  840, 262, '😱', 'Przymorze...\n\nNajstraszniejsza dzielnica Gdańska.\nMieszkańcy dawno stąd uciekli...\nPolicja tu nie zagląda. Nawet psy nie szczekają.\n\nCzujesz że coś cię obserwuje... 👁️');
 
   // Wiadukt: during Q9 show MARO scene instead of flavour info
@@ -985,6 +993,87 @@ function updateGdanskQuests(dt, sp) {
     ch('armata',   1883, 1568,  58, '💣', 'Armata!\nKultowy pub w sercu Wrzeszcza.\nNajlepsza pizza i piwo na trasie Politechnika→Collegia 🍺');
     ch('akademia', 3300, 1650,  72, '🎵', 'Akademia Muzyczna im. Stanisława Moniuszki!\nMuzycy ćwiczą tu dzień i noc —\ngamy słyszalne nawet znad Martwej Wisły! 🎹');
   }
+
+  // ── Karta: Fotobudka — plaża koło Mola (~2400, 650) ──
+  if (typeof acIsActive === 'function' && acIsActive('fotobudka') && !isDialogOpen()) {
+    if (!_GDN.fotoCD || _GDN.fotoCD <= 0) _GDN.fotoCD = 0;
+    _GDN.fotoCD = Math.max(0, (_GDN.fotoCD || 0) - dtS);
+    if (_GDN.fotoCD <= 0 && Math.hypot(sp.x - 2420, sp.y - 640) < 62) {
+      _GDN.fotoCD = 20;
+      const rafWants = Math.random() < 0.5;
+      if (rafWants) {
+        if (typeof applyZdenerwowanie === 'function') applyZdenerwowanie(-15);
+        showDialog('📸', 'Rafał chce zrobić zdjęcie!\nAgata jest szczęśliwa 😊\n-15 zdenerwowania 💕');
+      } else {
+        if (typeof applyZdenerwowanie === 'function') applyZdenerwowanie(12);
+        showDialog('📸', 'Rafał nie chce zdjęcia...\nAgata jest smutna 😢\n+12 zdenerwowania');
+      }
+    }
+  }
+
+  // ── Karta: Uno Minecraft — stragan na plaży (~2700, 520) ──
+  if (typeof acIsActive === 'function' && acIsActive('uno') && !isDialogOpen()) {
+    if (_GDN.unoCD === undefined) _GDN.unoCD = 0; if (_GDN.unoBuyCD === undefined) _GDN.unoBuyCD = 0;
+    _GDN.unoCD = Math.max(0, _GDN.unoCD - dtS); _GDN.unoBuyCD = Math.max(0, _GDN.unoBuyCD - dtS);
+    if (_GDN.unoCD <= 0 && Math.hypot(sp.x - 2700, sp.y - 520) < 62) {
+      _GDN.unoCD = 8;
+      if (_GDN.unoBuyCD > 0 && gameStats.zlote >= 15) {
+        if (typeof addZlote === 'function') addZlote(-15);
+        showDialog('🃏', 'Kupiłaś karty Uno Minecraft!\n...i co teraz z tym zrobisz? 🤷');
+        _GDN.unoBuyCD = 0;
+      } else if (gameStats.zlote >= 15) {
+        showDialog('🃏', 'Stragan z kartami Uno Minecraft!\nKosztują 15 zł. Wróć jeszcze raz żeby kupić!');
+        _GDN.unoBuyCD = 8;
+      } else {
+        showDialog('🃏', 'Stragan z kartami Uno Minecraft!\n(15 zł) — ale nie masz kasy 😅');
+      }
+    }
+  }
+
+  // ── Karta: Technikalia — teren koncertowy ──
+  if (typeof acIsActive === 'function' && acIsActive('technikalia') && !isDialogOpen() && _GDN.techCD === undefined) _GDN.techCD = 0;
+  if (typeof acIsActive === 'function' && acIsActive('technikalia')) {
+    if (_GDN.techCD > 0) _GDN.techCD -= dt / 1000;
+    if (!isDialogOpen() && _GDN.techCD <= 0 && Math.hypot(sp.x - 2350, sp.y - 1300) < 80) {
+      _GDN.techCD = 0.3;
+      if (typeof aceTechOpen === 'function') aceTechOpen();
+    }
+  }
+
+  // ── Karta: Ubrania — Galeria Bałtycka & Forum ──
+  if (typeof acIsActive === 'function' && acIsActive('ubrania') && !isDialogOpen()) {
+    if (_GDN.ubraniaCD === undefined) _GDN.ubraniaCD = 0;
+    if (_GDN.ubraniaCD > 0) { _GDN.ubraniaCD -= dt / 1000; }
+    else {
+      const inBalt = Math.hypot(sp.x - 1656, sp.y - 1278) < 90;
+      const inForum = Math.hypot(sp.x - 3098, sp.y - 1805) < 90;
+      if (inBalt || inForum) {
+        const mall = inBalt ? 'Galeria Bałtycka' : 'Galeria Forum';
+        _GDN.ubraniaCD = 15;
+        if (typeof applyZdenerwowanie === 'function') applyZdenerwowanie(15);
+        if (typeof showDialog === 'function') showDialog('🛍️', `${mall}\nAgata próbuje kupić ubrania...\nNiestety nic nie pasuje! 😤\n+15 zdenerwowania`);
+      }
+    }
+  }
+
+  // ── Karta: Giga Liga — selfie przy Armacie ──
+  if (typeof acIsActive === 'function' && acIsActive('giga_liga') && !isDialogOpen() && (_GDN.gigaCD === undefined || _GDN.gigaCD <= 0)) {
+    if (Math.hypot(sp.x - 1883, sp.y - 1568) < 68) {
+      if (_GDN.gigaCD === undefined) _GDN.gigaCD = 0;
+      _GDN.gigaCD = 20;
+      _aceOpenGigaLiga();
+    }
+  }
+  if (_GDN.gigaCD > 0) _GDN.gigaCD -= dt / 1000;
+
+  // ── Karta: WD (Wieczór Dżentelmana) — raz w grze ──
+  if (typeof acIsActive === 'function' && acIsActive('wd') && !_GDN.wdDone && !isDialogOpen() && Math.hypot(sp.x - 2080, sp.y - 1525) < 76) {
+    if (!_GDN.wdCD || _GDN.wdCD <= 0) {
+      _GDN.wdCD = 0.3;
+      _aceOpenWD();
+    }
+  }
+  if (_GDN.wdCD > 0) _GDN.wdCD -= dt / 1000;
 
   // ── Quest state machine ──
   switch (Q.state) {
@@ -1897,8 +1986,8 @@ function _gtaSceneDraw(c, W, H, ts) {
   c.beginPath(); c.moveTo(cx-pw0/2,ph); c.lineTo(cx-pw1/2,H); c.stroke();
   c.beginPath(); c.moveTo(cx+pw0/2,ph); c.lineTo(cx+pw1/2,H); c.stroke();
 
-  /* Agata at pier end (small, angry) */
-  _gtaDrawAgata(c, cx, H * 0.39, ts);
+  /* Agata at pier end (small, angry) — lower to stand on molo */
+  _gtaDrawAgata(c, cx, H * 0.44, ts);
 
   /* Giga Turbo Agnieszka — appears to the right of the pier */
   const R = Math.min(W, H) * 0.1;
@@ -1961,17 +2050,17 @@ function _gtaDrawGigaTurboAgnieszka(c, cx, waistY, R, ts) {
 
   c.shadowBlur = 0;
 
-  /* Arms (raised menacingly) */
+  /* Arms — machają w dół, bliżej nóg */
   c.shadowBlur = 0;
   c.fillStyle = '#f0c8a0';
-  const armSwing = Math.sin(ts/700) * 0.12;
-  c.save(); c.translate(cx - R*0.95, waistY - R*2.4); c.rotate(-0.45 + armSwing);
-  c.fillRect(-R*0.14, -R*1.1, R*0.28, R*1.3);
-  c.beginPath(); c.arc(0, -R*1.1, R*0.2, 0, Math.PI*2); c.fill();
+  const armSwing = Math.sin(ts/700) * 0.18;
+  c.save(); c.translate(cx - R*0.95, waistY - R*1.2); c.rotate(0.3 + armSwing);
+  c.fillRect(-R*0.14, 0, R*0.28, R*1.3);
+  c.beginPath(); c.arc(0, R*1.3, R*0.2, 0, Math.PI*2); c.fill();
   c.restore();
-  c.save(); c.translate(cx + R*0.95, waistY - R*2.4); c.rotate(0.45 - armSwing);
-  c.fillRect(-R*0.14, -R*1.1, R*0.28, R*1.3);
-  c.beginPath(); c.arc(0, -R*1.1, R*0.2, 0, Math.PI*2); c.fill();
+  c.save(); c.translate(cx + R*0.95, waistY - R*1.2); c.rotate(-0.3 - armSwing);
+  c.fillRect(-R*0.14, 0, R*0.28, R*1.3);
+  c.beginPath(); c.arc(0, R*1.3, R*0.2, 0, Math.PI*2); c.fill();
   c.restore();
 
   /* Neck */
@@ -2102,10 +2191,10 @@ function _gtaDrawGigaTurboAgnieszka(c, cx, waistY, R, ts) {
   c.fillStyle = 'rgba(255,255,255,0.55)';
   c.beginPath(); c.ellipse(cx-R*0.12, headY - R*1.06, R*0.26, R*0.15, -0.35, 0, Math.PI*2); c.fill();
 
-  /* Face — feminine oval (narrower width, slightly taller) drawn over lower hair cap */
+  /* Face — elongated oval (podłużna twarz) */
   c.shadowBlur = 0;
   c.fillStyle = '#f0c8a0';
-  c.beginPath(); c.ellipse(cx, headY + R*0.06, R*0.88, R*1.0, 0, 0, Math.PI*2); c.fill();
+  c.beginPath(); c.ellipse(cx, headY + R*0.10, R*0.72, R*1.18, 0, 0, Math.PI*2); c.fill();
 
   /* BANGS — connects face to hair cap at hairline, sits on top of both */
   c.fillStyle = '#dcdcec';

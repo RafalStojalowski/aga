@@ -17,7 +17,7 @@ function updatePlayer(dt) {
   if (len > 0.01) {
     const nx = inp.x / len;
     const ny = inp.y / len;
-    const spd = CFG.PLAYER_SPEED * (dt / 1000);
+    const spd = CFG.PLAYER_SPEED * (dt / 1000) * (typeof aceSpeedMult === 'function' ? aceSpeedMult() : 1);
 
     const mx = nx * spd;
     const my = ny * spd;
@@ -46,7 +46,8 @@ const _WARLUBIE_HEAL = { x: 1580, y: 1560, r: 100 };
 function _checkWarlubieHeal(dt) {
   if (gameStats.zdenerwowanie <= 0) return;
   if (Math.hypot(player.x - _WARLUBIE_HEAL.x, player.y - _WARLUBIE_HEAL.y) < _WARLUBIE_HEAL.r) {
-    applyZdenerwowanie(-3 * dt / 1000);
+    const hm = typeof aceWarlubieHealMult === 'function' ? aceWarlubieHealMult() : 1;
+    applyZdenerwowanie(-3 * hm * dt / 1000);
   }
 }
 

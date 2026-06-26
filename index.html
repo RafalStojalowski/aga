@@ -47,6 +47,8 @@
         <div id="equipped-gear"></div>
         <div id="equip-items-title">Karty Wspomnień</div>
         <div id="cards-grid"></div>
+        <div id="equip-agata-cards-title">Aktywne Karty Agaty</div>
+        <div id="equip-agata-cards-grid"></div>
       </div>
     </div>
   </div>
@@ -57,6 +59,7 @@
       <div id="anger-portrait">😤</div>
       <h2 id="anger-title">Agata wróciła do domu!</h2>
       <p id="anger-text">Zdenerwowanie osiągnęło poziom krytyczny.<br>Agata jest bardzo zła i potrzebuje chwili spokoju.</p>
+      <p id="anger-cards-hint" style="font-size:13px;opacity:0.8;margin-top:6px;">W Ergo Arenie możesz przeglądać wszystkie odblokowane Karty Agaty.</p>
       <button id="anger-close">Wróć do Warlubia</button>
     </div>
   </div>
@@ -248,8 +251,91 @@
     <canvas id="ending-cvs"></canvas>
   </div>
 
+  <!-- Chess mini-game overlay (karta: chess1 / chess2) -->
+  <div id="ace-chess-overlay" class="hidden">
+    <div id="ace-chess-panel">
+      <div id="ace-chess-title">♟ Turniej Szachowy</div>
+      <div id="ace-chess-body"></div>
+      <div id="ace-chess-anim" class="hidden"></div>
+      <div id="ace-chess-result" class="hidden"></div>
+      <div id="ace-chess-btns">
+        <button id="ace-chess-btn-yes" onclick="aceChessConfirm()">✔ Obstawiam!</button>
+        <button id="ace-chess-btn-no"  onclick="aceChessCancel()">✘ Uciekam</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Zła overlay -->
+  <div id="zla-overlay" class="hidden">
+    <div id="zla-panel">
+      <div id="zla-title">Aga, jesteś zła?</div>
+      <button onclick="zlaClose()">Nie jestem 😤</button>
+    </div>
+  </div>
+
+  <!-- WD Wieczór Dżentelmana cutscene -->
+  <div id="wd-overlay" class="hidden">
+    <canvas id="wd-cvs"></canvas>
+    <div id="wd-reward" class="hidden">+1500 zł 💰</div>
+    <button id="wd-close" class="hidden" onclick="_wdClose()">Zamknij</button>
+  </div>
+
+  <!-- Spóźnienie overlay -->
+  <div id="spoz-overlay" class="hidden">
+    <div id="spoz-panel">
+      <div id="spoz-title">📱 Czekam na Rafała...</div>
+      <div id="spoz-body">Rafał powinien już tu być. Dokąd poszedł?</div>
+      <button onclick="spozClose()">Zamknij</button>
+    </div>
+  </div>
+
+  <!-- Technikalia overlay -->
+  <div id="tech-overlay" class="hidden">
+    <div id="tech-panel">
+      <div id="tech-title">🎓 Technikalia — Turniej Projektowy</div>
+      <div id="tech-body">Rafał ma projekt techniczny. Jak pójdzie?</div>
+      <div id="tech-rolls-info"></div>
+      <button id="tech-btn-roll" onclick="techRoll()">🎲 Losuj wynik</button>
+      <button id="tech-btn-close" onclick="techClose()">Zamknij</button>
+    </div>
+  </div>
+
+  <!-- Card fullscreen detail view -->
+  <div id="ac-card-detail" class="hidden">
+    <div id="ac-card-detail-inner">
+      <button id="ac-card-detail-close" onclick="closeCardDetail()">✕</button>
+      <canvas id="ac-card-detail-canvas" width="340" height="480"></canvas>
+      <div id="ac-card-detail-name"></div>
+      <div id="ac-card-detail-desc"></div>
+      <div id="ac-card-detail-badge" class="ac-badge ac-badge--off"></div>
+    </div>
+  </div>
+
+  <!-- Agata Cards browser -->
+  <div id="agata-cards-overlay" class="hidden">
+    <div id="agata-cards-panel">
+      <div id="agata-cards-header">
+        <span id="agata-cards-title">Karty Agaty</span>
+        <span id="agata-cards-count"></span>
+        <button id="agata-cards-close" onclick="closeAgataCardBrowser()">✕</button>
+      </div>
+      <div id="agata-cards-grid"></div>
+    </div>
+  </div>
+
   <div id="hud">
     <div id="save-toast" class="hidden">💾 Zapisano</div>
+  </div>
+
+  <!-- Debug: card toggle submenu -->
+  <div id="dbg-card-toggle-overlay" class="hidden">
+    <div id="dbg-card-toggle-panel">
+      <div id="dbg-card-toggle-header">
+        <span>🎴 Toggle Kart Agaty</span>
+        <button onclick="acDbgCloseCardToggleMenu()">✕</button>
+      </div>
+      <div id="dbg-card-toggle-grid"></div>
+    </div>
   </div>
 
   <!-- Debug menu (toggle with ` key) -->
@@ -368,6 +454,20 @@
         </div>
       </div>
 
+      <div class="dbg-section">
+        <div class="dbg-label">Karty Agaty — dostęp (Ergo Arena)</div>
+        <div class="dbg-row">
+          <button onclick="_dbgSet('ac','off')">🔒 Niedostępne</button>
+          <button onclick="_dbgSet('ac','on')">🔓 Dostępne (gra ukończona)</button>
+        </div>
+        <div class="dbg-row">
+          <button onclick="openAgataCardBrowser()">📋 Otwórz browser kart</button>
+          <button onclick="acDbgUnlockAll()">🃏 Odblokuj wszystkie</button>
+          <button onclick="acDbgLockAll()">🔐 Zablokuj wszystkie</button>
+          <button onclick="acDbgOpenCardToggleMenu()" style="background:rgba(40,40,120,0.8);border-color:rgba(100,100,220,0.5);color:#aaaaff;">🎴 Toggle kart...</button>
+        </div>
+      </div>
+
       <div class="dbg-hint">Skrót klawiszowy: ` (backtick)</div>
     </div>
   </div>
@@ -378,6 +478,10 @@
   <script src="js/events.js"></script>
   <script src="js/equipment.js"></script>
   <script src="js/save.js"></script>
+  <script src="js/cards_agata.js"></script>
+  <script src="js/cards_agata_art.js"></script>
+  <script src="js/cards_agata_art2.js"></script>
+  <script src="js/cards_agata_effects.js"></script>
   <script src="js/input.js"></script>
   <script src="js/submap.js"></script>
   <script src="js/quest_agnieszka.js"></script>

@@ -406,12 +406,20 @@ function updateHelQuests(dt, sp) {
     }
     /* Gofrownia {x:1830, y:335, w:120, h:82} → center (1890, 376) */
     if (st.gofCooldown <= 0 && Math.hypot(sp.x - 1890, sp.y - 376) < 62) {
+      const moloRepeat = typeof acIsActive === 'function' && (acIsActive('molo_gofry') || acIsActive('gofry_smietana')) && _HEL_Q12.state === 'q12_done';
+      const gofrPayout = acIsActive('gofry_smietana') && !acIsActive('molo_gofry') ? 100 : 150;
       if (_HEL_Q12.state === 'q12_active' && _HEL_Q12.trigCD <= 0) {
         _HEL_Q12.trigCD = 20;
         st.gofCooldown = 20;
         _openWaffleGame(() => {
           _HEL_Q12.state = 'q12_done';
           if (typeof _KM_QUEST !== 'undefined') _KM_QUEST.state = 'q12_done';
+        });
+      } else if (moloRepeat) {
+        st.gofCooldown = 20;
+        _openWaffleGame(() => {
+          if (typeof addZlote === 'function') addZlote(gofrPayout);
+          showDialog('🧇', `Wygrałaś konkurs gofrowy! +${gofrPayout} zł 🍓💰`);
         });
       } else if (_HEL_Q12.state !== 'q12_active') {
         showDialog('🧇', 'Gofrownia na Helu!\nNajlepsze gofry nad morzem.\nZ bitą śmietaną i truskawkami 🍓');
@@ -498,7 +506,7 @@ function updateHelQuests(dt, sp) {
       en._y = Math.max(yMin, Math.min(yMax, en._y));
       if (dist < 55) {
         en.attackTimer += dtS;
-        if (en.attackTimer >= 1) { en.attackTimer = 0; applyZdenerwowanie(Math.round(8 * getObronaMult())); st.playerHitFlash = 1; }
+        if (en.attackTimer >= 1) { en.attackTimer = 0; applyZdenerwowanie(Math.round(8 * getObronaMult() * (typeof aceAtakMult==='function'?aceAtakMult():1))); st.playerHitFlash = 1; }
       } else { en.attackTimer = 0; }
     } else {
       en.patrolTimer += dtS;

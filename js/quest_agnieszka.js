@@ -160,7 +160,7 @@ function _updateGrudziadzEnemies(dt, subPlayer) {
           en.attackTimer = 0;
           const nearEnclosure = subPlayer.x > 330 && subPlayer.x < 1070 && subPlayer.y > 790 && subPlayer.y < 1150;
           if (!nearEnclosure) {
-            applyZdenerwowanie(5);
+            applyZdenerwowanie(5 * (typeof aceAtakMult==='function'?aceAtakMult():1));
             q.playerHitFlash = 1;
           }
         }
@@ -585,16 +585,22 @@ function updateWorldCompanions(dt) {
     _RAFAL_WORLD.modeTimer -= dtS;
     if (_RAFAL_WORLD.modeTimer <= 0) {
       if (_RAFAL_WORLD.mode === 'follow') {
-        _RAFAL_WORLD.mode = 'run';
-        _RAFAL_WORLD.modeTimer = 2 + Math.random() * 2;
-        const a = Math.random() * Math.PI * 2;
-        _RAFAL_WORLD.runDX = Math.cos(a); _RAFAL_WORLD.runDY = Math.sin(a);
+        /* często ucieka — 70% run, 30% stop */
+        if (Math.random() < 0.7) {
+          _RAFAL_WORLD.mode = 'run';
+          _RAFAL_WORLD.modeTimer = 3 + Math.random() * 3;
+          const a = Math.random() * Math.PI * 2;
+          _RAFAL_WORLD.runDX = Math.cos(a); _RAFAL_WORLD.runDY = Math.sin(a);
+        } else {
+          _RAFAL_WORLD.mode = 'stop';
+          _RAFAL_WORLD.modeTimer = 1.5 + Math.random() * 2;
+        }
       } else if (_RAFAL_WORLD.mode === 'run') {
         _RAFAL_WORLD.mode = 'stop';
-        _RAFAL_WORLD.modeTimer = 3 + Math.random() * 3;
+        _RAFAL_WORLD.modeTimer = 1 + Math.random() * 1.5;
       } else {
         _RAFAL_WORLD.mode = 'follow';
-        _RAFAL_WORLD.modeTimer = 5 + Math.random() * 6;
+        _RAFAL_WORLD.modeTimer = 2 + Math.random() * 3;
       }
     }
 
@@ -602,14 +608,19 @@ function updateWorldCompanions(dt) {
     const dy = player.y - _RAFAL_WORLD.y;
     const dist = Math.hypot(dx, dy) || 1;
 
+    const _iceOn = typeof acIsActive === 'function' && acIsActive('iceowka');
+    const _rafalSpMult = (typeof aceRafalSpeedMult === 'function' ? aceRafalSpeedMult() : 1) * (_iceOn ? 0.5 : 1);
+    const _iceTimer = _iceOn ? (Date.now()*0.002) : 0;
+    const _iceDriftX = _iceOn ? Math.cos(_iceTimer*2.1)*30*dtS : 0;
+    const _iceDriftY = _iceOn ? Math.sin(_iceTimer*1.7)*20*dtS : 0;
     if (_RAFAL_WORLD.mode === 'follow' && dist > 40) {
-      const spd = _RAFAL_WORLD.speed * dtS;
-      _RAFAL_WORLD.x += (dx/dist) * spd;
-      _RAFAL_WORLD.y += (dy/dist) * spd;
+      const spd = _RAFAL_WORLD.speed * _rafalSpMult * dtS;
+      _RAFAL_WORLD.x += (dx/dist) * spd + _iceDriftX;
+      _RAFAL_WORLD.y += (dy/dist) * spd + _iceDriftY;
     } else if (_RAFAL_WORLD.mode === 'run') {
-      const spd = _RAFAL_WORLD.speed * 1.3 * dtS;
-      _RAFAL_WORLD.x += _RAFAL_WORLD.runDX * spd;
-      _RAFAL_WORLD.y += _RAFAL_WORLD.runDY * spd;
+      const spd = _RAFAL_WORLD.speed * _rafalSpMult * 1.4 * dtS;
+      _RAFAL_WORLD.x += _RAFAL_WORLD.runDX * spd + _iceDriftX;
+      _RAFAL_WORLD.y += _RAFAL_WORLD.runDY * spd + _iceDriftY;
       _RAFAL_WORLD.x = Math.max(50, Math.min(CFG.WORLD_W - 50, _RAFAL_WORLD.x));
       _RAFAL_WORLD.y = Math.max(50, Math.min(CFG.WORLD_H - 50, _RAFAL_WORLD.y));
     }
@@ -719,7 +730,7 @@ function updateQ14Boss(dt, lastDirX, lastDirY) {
     /* Laser every 3s — random 3-8 damage */
     B.laserTimer -= dtS;
     if (B.laserTimer <= 0) {
-      B.laserTimer = 3;
+      B.laserTimer = typeof aceLaserResetTime === 'function' ? aceLaserResetTime() : 3;
       const LEN = 700;
       const ex = player.x + lastDirX * LEN, ey = player.y + lastDirY * LEN;
       B.laserBeam = { x1: player.x, y1: player.y, x2: ex, y2: ey, alpha: 1.0 };
@@ -756,7 +767,7 @@ function updateQ14Boss(dt, lastDirX, lastDirY) {
       const dmg  = r.big ? 25 : 12;
       if (Math.hypot(r.x-player.x, r.y-player.y) < hitR) {
         r.alive = false;
-        if (typeof applyZdenerwowanie === 'function') applyZdenerwowanie(dmg);
+        if (typeof applyZdenerwowanie === 'function') applyZdenerwowanie(dmg * (typeof aceAtakMult==='function'?aceAtakMult():1));
       }
       if (Math.hypot(r.x-B.x, r.y-B.y) > 1000) r.alive = false;
     }

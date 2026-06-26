@@ -124,10 +124,12 @@ function drawHitFX(ctx) {
 
 /* ── Apply zdenerwowanie change (call this from events/cards) ── */
 function applyZdenerwowanie(delta) {
-  gameStats.zdenerwowanie = Math.max(0, Math.min(100, gameStats.zdenerwowanie + delta));
+  const minZd = typeof aceMinZd === 'function' ? aceMinZd() : 0;
+  const maxZd = typeof aceMaxZd === 'function' ? aceMaxZd() : 100;
+  gameStats.zdenerwowanie = Math.max(minZd, Math.min(maxZd, gameStats.zdenerwowanie + delta));
   _updateStatBar();
   if (delta !== 0) triggerZdBar();
-  if (gameStats.zdenerwowanie >= 100 && !_angerTriggered) {
+  if (gameStats.zdenerwowanie >= maxZd && !_angerTriggered) {
     _angerTriggered = true;
     setTimeout(triggerAnger, 80);
   }
@@ -146,36 +148,6 @@ function isAngerActive() { return _angerActive; }
 
 /* ── Card definitions ── */
 const ALL_CARDS = [
-  {
-    id: 'first_date',
-    name: 'Pierwsza Randka',
-    type: 'Wspomnienie',
-    rarity: 'gold',       // gold / silver / common / rare / legendary
-    rarityColor: '#f5c842',
-    effectLabel: 'Efekt: do odkrycia w grze',
-    desc: 'Tamten wieczór kiedy baliśmy się co powiedzieć, a czas leciał za szybko.',
-    drawArt(ctx, w, h) {
-      // Romantic restaurant scene
-      const g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, '#1a0a2e'); g.addColorStop(1, '#2d1040');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
-      // candles
-      for (const cx of [w * 0.3, w * 0.7]) {
-        ctx.fillStyle = '#c8a060'; ctx.fillRect(cx - 3, h * 0.55, 6, h * 0.3);
-        const flame = ctx.createRadialGradient(cx, h * 0.48, 0, cx, h * 0.5, 10);
-        flame.addColorStop(0, '#fff8b0'); flame.addColorStop(0.5, '#ffaa00'); flame.addColorStop(1, 'transparent');
-        ctx.fillStyle = flame; ctx.beginPath(); ctx.ellipse(cx, h * 0.5, 6, 10, 0, 0, Math.PI * 2); ctx.fill();
-      }
-      // table
-      ctx.fillStyle = '#5a2d0c'; ctx.fillRect(w * 0.1, h * 0.7, w * 0.8, h * 0.06);
-      // hearts
-      ctx.fillStyle = '#ff6680'; ctx.font = `${h * 0.18}px serif`;
-      ctx.textAlign = 'center'; ctx.fillText('♥', w / 2, h * 0.38);
-      ctx.font = `${h * 0.1}px serif`;
-      ctx.fillStyle = '#ff88aa';
-      ctx.fillText('♥', w * 0.2, h * 0.28); ctx.fillText('♥', w * 0.82, h * 0.22);
-    },
-  },
   {
     id: 'gdansk_trip',
     name: 'Gdańsk o Świcie',
@@ -860,6 +832,7 @@ function _openEquip() {
   document.getElementById('equip-overlay').classList.remove('hidden');
   _updateStatBar();
   _buildCardsGrid();
+  if (typeof _acRefreshEquipPanel === 'function') _acRefreshEquipPanel();
   _startCharAnim();
   document.addEventListener('keydown', _onEscClose);
 }

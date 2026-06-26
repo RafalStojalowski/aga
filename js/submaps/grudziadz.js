@@ -390,6 +390,8 @@ const _CAT_Q = {
   firstCatDone: false,
 };
 
+let _GRZ_ubrCD = 0;
+
 /* ── Quest update / draw (called by submap engine) ──
    Łączy logikę wrogów (quest_agnieszka.js) z zagrodą (grudziadz.js) */
 function updateGrudziadzQuests(dt, sp) {
@@ -400,11 +402,29 @@ function updateGrudziadzQuests(dt, sp) {
 
   /* koty w zagrodzie chodzą tylko gdy zagroda odkryta */
   if (_CAT_Q.state === 'revealed' || _CAT_Q.state === 'done') {
+    const inEnclosure = sp.x >= CAT_ENC.x && sp.x <= CAT_ENC.x + CAT_ENC.w &&
+                        sp.y >= CAT_ENC.y && sp.y <= CAT_ENC.y + CAT_ENC.h;
     for (const c of catState.cats) {
-      c.stepAnim += dtS * c.speed * 0.08;
-      c._x += c._dir * c.speed * dtS;
-      if (c._x >= c.patrolMax) { c._x = c.patrolMax; c._dir = -1; }
-      if (c._x <= c.patrolMin) { c._x = c.patrolMin; c._dir =  1; }
+      if (inEnclosure) {
+        /* podchodzą do gracza gdy Agata wchodzi do zagrody */
+        const cdx = sp.x - c._x, cdy = sp.y - c._y;
+        const cdist = Math.hypot(cdx, cdy) || 1;
+        if (cdist > 30) {
+          const spd = c.speed * 1.4 * dtS;
+          c._x += (cdx / cdist) * spd;
+          c._y += (cdy / cdist) * spd;
+          c._dir = cdx > 0 ? 1 : -1;
+          c.stepAnim += dtS * c.speed * 0.12;
+        } else {
+          c.stepAnim += dtS * 0.5;
+        }
+      } else {
+        /* normalne patrolowanie gdy gracza nie ma w zagrodzie */
+        c.stepAnim += dtS * c.speed * 0.08;
+        c._x += c._dir * c.speed * dtS;
+        if (c._x >= c.patrolMax) { c._x = c.patrolMax; c._dir = -1; }
+        if (c._x <= c.patrolMin) { c._x = c.patrolMin; c._dir =  1; }
+      }
       c._mewTimer = (c._mewTimer || 8) - dtS;
       if (c._mewTimer <= 0) { c._mewAlpha = 1; c._mewTimer = Math.random() * 12 + 7; }
       if (c._mewAlpha > 0) c._mewAlpha = Math.max(0, c._mewAlpha - dtS * 0.38);
@@ -427,6 +447,7 @@ function updateGrudziadzQuests(dt, sp) {
       addZlote(-200);
       _CAT_Q.state = 'revealed';
       _CAT_Q.trigCooldown = 1;
+      catState.menuCooldown = 12;
       showDialog('🐾', 'Zagroda odkryta! Pieniądze dobrze wydane.\nTeraz Agata musi kupić jednego kotka!');
     } else {
       showDialog('💸', 'Za mało złotych! Potrzebujesz 200 zł żeby odkryć to miejsce.');
@@ -451,6 +472,16 @@ function updateGrudziadzQuests(dt, sp) {
   if (_CAT_Q.state === 'done') {
     if (!isCatMenuOpen() && !isDialogOpen() && catState.menuCooldown <= 0 && distCat < 145) {
       openCatMenu();
+    }
+  }
+
+  /* Karta: Ubrania — Alfa Centrum (center ~455, 520) */
+  if (typeof acIsActive === 'function' && acIsActive('ubrania') && !isDialogOpen()) {
+    _GRZ_ubrCD = Math.max(0, _GRZ_ubrCD - dtS);
+    if (_GRZ_ubrCD <= 0 && Math.hypot(sp.x - 455, sp.y - 520) < 100) {
+      _GRZ_ubrCD = 15;
+      if (typeof applyZdenerwowanie === 'function') applyZdenerwowanie(15);
+      showDialog('🛍️', 'Alfa Centrum!\nAgata próbuje kupić ubrania...\nNiestety nic nie pasuje! 😤\n+15 zdenerwowania');
     }
   }
 }

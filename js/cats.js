@@ -86,7 +86,7 @@ function _addCatToEnclosure(type, appearance) {
 
 /* ── Buy / Feed ── */
 function buyRollCat() {
-  if (catState.cats.length >= 5) return;
+  if (catState.cats.length >= (typeof aceMaxCats === 'function' ? aceMaxCats() : 5)) return;
   const cost = _catNextCost();
   if (!cost || gameStats.zlote < cost) { _showCatResult('Za mało złotych! 😿','#e06060'); return; }
   addZlote(-cost);
