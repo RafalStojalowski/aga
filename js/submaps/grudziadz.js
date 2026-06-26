@@ -388,6 +388,7 @@ const _CAT_Q = {
   state:        'hidden',
   trigCooldown: 0,
   firstCatDone: false,
+  menuReady:    false, /* true dopiero gdy gracz odejdzie po odblokowaniu */
 };
 
 let _GRZ_ubrCD = 0;
@@ -447,8 +448,9 @@ function updateGrudziadzQuests(dt, sp) {
       addZlote(-200);
       _CAT_Q.state = 'revealed';
       _CAT_Q.trigCooldown = 1;
-      catState.menuCooldown = 12;
-      showDialog('🐾', 'Zagroda odkryta! Pieniądze dobrze wydane.\nTeraz Agata musi kupić jednego kotka!');
+      _CAT_Q.menuReady = false; /* menu dopiero po wyjściu i powrocie */
+      catState.menuCooldown = 0;
+      showDialog('🐾', 'Zagroda odkryta! Pieniądze dobrze wydane.\nWróć tu żeby kupić pierwszego kotka!');
     } else {
       showDialog('💸', 'Za mało złotych! Potrzebujesz 200 zł żeby odkryć to miejsce.');
       _CAT_Q.trigCooldown = 4;
@@ -457,7 +459,9 @@ function updateGrudziadzQuests(dt, sp) {
   }
 
   if (_CAT_Q.state === 'revealed') {
-    if (!isCatMenuOpen() && !isDialogOpen() && catState.menuCooldown <= 0 && distCat < 145) {
+    /* menu dostępne dopiero gdy gracz odejdzie >200px i wróci */
+    if (!_CAT_Q.menuReady && distCat > 200) _CAT_Q.menuReady = true;
+    if (_CAT_Q.menuReady && !isCatMenuOpen() && !isDialogOpen() && catState.menuCooldown <= 0 && distCat < 145) {
       openCatMenu();
     }
     /* wykryj zakup pierwszego kotka */

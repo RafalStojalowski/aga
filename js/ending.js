@@ -11,12 +11,13 @@ const _ENDING = {
   _raf: null,
   _audio: null,
   _musicStarted: false,
+  _skipSave: false,
 };
 
 const _CREDITS_LINES = [
   { text: '2 lata razem', style: 'title' },
   { text: '', style: 'gap' },
-  { text: '── 2024 / 2025 ──', style: 'divider' },
+  { text: '── 2024 - 2026 ──', style: 'divider' },
   { text: '', style: 'gap' },
   { text: 'Stworzył, zaprogramował,', style: 'heading' },
   { text: 'narysował i wyreżyserował', style: 'heading' },
@@ -57,7 +58,7 @@ const _CREDITS_LINES = [
   { text: 'za towarzystwo', style: 'sub' },
   { text: '', style: 'gap' },
   { text: 'MARO', style: 'name' },
-  { text: 'za bycie najlepszym psem', style: 'sub' },
+  { text: 'za bycie Zaspiańskim mężem stanu', style: 'sub' },
   { text: '', style: 'gap' },
   { text: 'Giga Turbo Agnieszka', style: 'name' },
   { text: 'za bycie złoczyńcą', style: 'sub' },
@@ -163,7 +164,7 @@ function _launchEndingOverlay() {
         if (ly < -_LINE_HEIGHT || ly > H + _LINE_HEIGHT) continue;
 
         /* trigger music when music_cue line scrolls into view */
-        if (line.style === 'music_cue' && !_musicTriggered && ly < H * 0.85) {
+        if (line.style === 'music_cue' && !_musicTriggered && ly < H) {
           _musicTriggered = true;
           _ENDING._audio = new Audio('aga 2 lata.mp3');
           _ENDING._audio.volume = 0.85;
@@ -263,6 +264,7 @@ function _launchEndingOverlay() {
         if (_finaleTimer > 2.0) {
           try {
             acMarkGameCompleted();
+            _ENDING._skipSave = true;
             const _acSave = localStorage.getItem(AGATA_CARDS_KEY);
             localStorage.clear();
             if (_acSave) localStorage.setItem(AGATA_CARDS_KEY, _acSave);

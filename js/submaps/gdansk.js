@@ -766,20 +766,22 @@ function _maroDraw(ts, cv) {
    Keyboard & touch wiring (runs after DOM ready)
    ══════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', () => {
-  // Beer race — click/tap panel
+  // Beer race — pointerdown (no 300ms delay on mobile)
   const bPanel = document.getElementById('beer-race-panel');
   if (bPanel) {
-    bPanel.addEventListener('click', e => {
+    bPanel.addEventListener('pointerdown', e => {
       if (e.target.id === 'beer-race-close') return;
+      e.preventDefault();
       _beerTap();
     });
   }
 
-  // Kayak race — click/tap panel
+  // Kayak race — pointerdown (no 300ms delay on mobile)
   const kPanel = document.getElementById('kayak-race-panel');
   if (kPanel) {
-    kPanel.addEventListener('click', e => {
+    kPanel.addEventListener('pointerdown', e => {
       if (e.target.id === 'kayak-race-close') return;
+      e.preventDefault();
       _kayakTap();
     });
   }

@@ -995,6 +995,8 @@ body {
   width: 100%; height: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 10px;
+  touch-action: manipulation;
+  user-select: none; -webkit-user-select: none;
 }
 #beer-race-title {
   font: bold 20px "Segoe UI",sans-serif;
@@ -1074,6 +1076,8 @@ body {
   width: 100%; height: 100%;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 8px;
+  touch-action: manipulation;
+  user-select: none; -webkit-user-select: none;
 }
 #kayak-race-title {
   font: bold 18px "Segoe UI",sans-serif;

@@ -3,6 +3,7 @@
 const SAVE_KEY = 'nasza_przygoda_v3';
 
 function saveGame() {
+  if (typeof _ENDING !== 'undefined' && _ENDING._skipSave) return;
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       x:           Math.round(player.x),
@@ -18,6 +19,7 @@ function saveGame() {
       trQuestState: _TR_QUEST.state,
       catQState:    _CAT_Q.state,
       catQFirstDone: _CAT_Q.firstCatDone,
+      catQMenuReady: _CAT_Q.menuReady,
       gdnQuestState: _GDN_QUEST.state,
       helQuestState: _HEL_QUEST.state,
       helQuestKills: _HEL_QUEST.kills,
@@ -109,6 +111,7 @@ function loadGame() {
     if (s.catQState && VALID_CAT_Q.includes(s.catQState)) {
       _CAT_Q.state = s.catQState;
       _CAT_Q.firstCatDone = !!s.catQFirstDone;
+      _CAT_Q.menuReady = !!s.catQMenuReady;
     }
     if (Array.isArray(s.cats)) {
       /* stare save'y bez catQState — jeśli gracz miał koty, zagroda musiała być odkryta */

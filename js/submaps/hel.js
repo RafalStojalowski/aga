@@ -107,7 +107,21 @@ function _openWaffleGame(onDone) {
   });
   ov.classList.remove('hidden');
   document.getElementById('waffle-result').classList.add('hidden');
+
+  /* touch na waffle-cvs → steruje _joy (tak samo jak główny canvas) */
+  function _wfTouchStart(e) { e.preventDefault(); if (typeof onTouchStart === 'function') onTouchStart(e); }
+  function _wfTouchMove(e)  { e.preventDefault(); if (typeof onTouchMove  === 'function') onTouchMove(e);  }
+  function _wfTouchEnd(e)   { e.preventDefault(); if (typeof onTouchEnd   === 'function') onTouchEnd(e);   }
+  cv.addEventListener('touchstart',  _wfTouchStart, { passive: false });
+  cv.addEventListener('touchmove',   _wfTouchMove,  { passive: false });
+  cv.addEventListener('touchend',    _wfTouchEnd,   { passive: false });
+  cv.addEventListener('touchcancel', _wfTouchEnd,   { passive: false });
+
   document.getElementById('waffle-close').onclick = function() {
+    cv.removeEventListener('touchstart',  _wfTouchStart);
+    cv.removeEventListener('touchmove',   _wfTouchMove);
+    cv.removeEventListener('touchend',    _wfTouchEnd);
+    cv.removeEventListener('touchcancel', _wfTouchEnd);
     ov.classList.add('hidden');
     _WAFFLE.active = false;
     if (_WAFFLE.rafId) { cancelAnimationFrame(_WAFFLE.rafId); _WAFFLE.rafId = null; }
@@ -132,7 +146,7 @@ function _waffleLoop(ts) {
   const cv   = document.getElementById('waffle-cvs');
   const c    = cv.getContext('2d');
   const W    = cv.width, H = cv.height;
-  const FACE_R = Math.min(W, H) * 0.28;
+  const FACE_R = Math.min(W, H) * 0.18;
 
   if (_WAFFLE.state === 'playing') {
     /* face movement — keyboard or joystick */
@@ -167,15 +181,22 @@ function _waffleLoop(ts) {
       const wf = _WAFFLE.waffles[i];
       wf.timer -= dt;
       const eatDist = Math.hypot(wf.x - mouthX, wf.y - mouthY);
-      if (eatDist < 48) {
+      if (eatDist < FACE_R * 0.9) {
         _WAFFLE.eaten++;
-        _WAFFLE.cream.push({
-          ox: (Math.random() - 0.5) * FACE_R * 0.75,
-          oy: (Math.random() - 0.5) * FACE_R * 0.6,
-          a:  Math.random() * Math.PI,
-          rx: 12 + Math.random() * 10,
-          ry:  7 + Math.random() * 6,
-        });
+        /* 4-6 plam bitej śmietany na gofra */
+        const splats = 4 + Math.floor(Math.random() * 3);
+        for (let s = 0; s < splats; s++) {
+          const ang = Math.random() * Math.PI * 2;
+          const dist = Math.random() * FACE_R * 0.82;
+          _WAFFLE.cream.push({
+            ox: Math.cos(ang) * dist,
+            oy: Math.sin(ang) * dist * 0.75,
+            a:  Math.random() * Math.PI,
+            rx: FACE_R * (0.10 + Math.random() * 0.14),
+            ry: FACE_R * (0.06 + Math.random() * 0.08),
+            blobs: Math.floor(Math.random() * 3), /* dodatkowe kulki wokół */
+          });
+        }
         _WAFFLE.waffles.splice(i, 1);
         if (_WAFFLE.eaten >= 10) { _waffleEnd('won'); return; }
       } else if (wf.timer <= 0) {
@@ -206,11 +227,27 @@ function _drawWaffleAgataFace(c, fx, fy, R, cream, ts) {
   /* head */
   c.fillStyle = SKIN;
   c.beginPath(); c.ellipse(fx, fy, R * 0.9, R, 0, 0, Math.PI * 2); c.fill();
-  /* cream stains — painted ON skin before hair/eyes so features stay clean-ish */
+  /* cream stains — bita śmietana */
   for (const cr of cream) {
-    c.fillStyle = 'rgba(255,255,255,0.85)';
-    c.beginPath(); c.ellipse(fx + cr.ox, fy + cr.oy, cr.rx, cr.ry, cr.a, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = 'rgba(200,200,200,0.5)'; c.lineWidth = 1; c.stroke();
+    const cx2 = fx + cr.ox, cy2 = fy + cr.oy;
+    /* bazowa kleksa */
+    c.fillStyle = 'rgba(255,255,255,0.92)';
+    c.beginPath(); c.ellipse(cx2, cy2, cr.rx, cr.ry, cr.a, 0, Math.PI * 2); c.fill();
+    /* delikatny cień żeby wyglądało 3D */
+    c.fillStyle = 'rgba(210,230,255,0.35)';
+    c.beginPath(); c.ellipse(cx2 + cr.rx*0.15, cy2 + cr.ry*0.2, cr.rx*0.7, cr.ry*0.6, cr.a, 0, Math.PI * 2); c.fill();
+    /* połysk */
+    c.fillStyle = 'rgba(255,255,255,0.7)';
+    c.beginPath(); c.ellipse(cx2 - cr.rx*0.25, cy2 - cr.ry*0.3, cr.rx*0.28, cr.ry*0.22, cr.a, 0, Math.PI * 2); c.fill();
+    /* dodatkowe kulki rozchlapania */
+    if (cr.blobs) {
+      for (let b = 0; b < cr.blobs; b++) {
+        const ba = cr.a + (b + 1) * 1.1;
+        const bd = cr.rx * (0.8 + b * 0.4);
+        c.fillStyle = 'rgba(255,255,255,0.78)';
+        c.beginPath(); c.arc(cx2 + Math.cos(ba)*bd, cy2 + Math.sin(ba)*bd*0.6, cr.rx * 0.28, 0, Math.PI * 2); c.fill();
+      }
+    }
   }
   /* back hair (golden, long strands) */
   c.fillStyle = '#d4b830';
@@ -349,6 +386,9 @@ function _waffleDraw(c, W, H, FACE_R) {
   c.fillStyle = _WAFFLE.misses >= 2 ? '#ff5050' : '#ff9090';
   c.fillText('❌ Pudła: ' + _WAFFLE.misses + '/3', 18, 50);
   c.shadowBlur = 0;
+
+  /* wirtualny joystick na telefonie */
+  if (typeof drawJoystick === 'function') drawJoystick(c, H);
 }
 
 function _spawnMorskaAgnieszki() {
@@ -555,6 +595,24 @@ function updateHelQuests(dt, sp) {
 function drawHelQuests(ctx, ts) {
   for (const en of _HEL_ST.morskaAg) if (en.alive) _drawMorskaAgnieszka(ctx, en, ts);
   drawHitFX(ctx);
+
+  /* Q12: "!" nad gofrowniją gdy quest aktywny */
+  if (_HEL_Q12.state === 'q12_active') {
+    const pulse = 0.7 + Math.sin(ts * 0.006) * 0.3;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(1890, 310, 22 * pulse, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,80,0,${0.18 * pulse})`; ctx.fill();
+    ctx.beginPath(); ctx.arc(1890, 310, 13, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff4400'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.font = 'bold 16px "Segoe UI",sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillStyle = '#fff';
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 3;
+    ctx.fillText('!', 1890, 310);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
 }
 
 /* ── HUD ── */

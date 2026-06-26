@@ -105,11 +105,13 @@ function _updateGrudziadzEnemies(dt, subPlayer) {
   if (q.enemies.length === 0) return;
 
   /* Respawn dead enemies */
+  const aliveCount = q.enemies.filter(e => e.alive).length;
+  const postQuestLimit = 5;
   for (const en of q.enemies) {
     if (!en.alive) {
       en.respawnTimer -= dtS;
       if (en.respawnTimer <= 0) {
-        if (q.state === 'done') { en.alive = false; continue; }
+        if (q.state === 'done' && aliveCount >= postQuestLimit) { en.alive = false; continue; }
         const spawn = _AGNIESZKA_SPAWNS[en.id];
         en._x = spawn.x; en._y = spawn.y;
         en.hp = en.maxHp; en.alive = true;
@@ -127,7 +129,6 @@ function _updateGrudziadzEnemies(dt, subPlayer) {
 
   for (const en of q.enemies) {
     if (!en.alive) continue;
-    if (q.state === 'done') continue;
 
     const dx   = subPlayer.x - en._x;
     const dy   = subPlayer.y - en._y;

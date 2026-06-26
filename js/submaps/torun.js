@@ -18,6 +18,98 @@ const _TR_TREES = [
   {x:1552,y:952,r:15},{x:1678,y:1012,r:14},
 ];
 
+/* ── Mini-agnieszki (stałe słabe przeciwniki w Toruniu) ── */
+const _TR_MINI_SPAWNS = [
+  {x:200,y:280},{x:450,y:160},{x:720,y:360},{x:980,y:490},
+  {x:1260,y:310},{x:560,y:680},{x:1080,y:220},{x:830,y:560},
+];
+let _TR_MINI_AGN = [];
+let _TR_MINI_NEXT = 14;
+let _TR_MINI_ATK_TIMER = 0;
+
+function _updateMiniAgn(dt, sp) {
+  const s = dt / 1000;
+  _TR_MINI_NEXT -= s;
+  if (_TR_MINI_NEXT <= 0 && _TR_MINI_AGN.length < 6) {
+    _TR_MINI_NEXT = 10 + Math.random() * 14;
+    const pos = _TR_MINI_SPAWNS[Math.floor(Math.random() * _TR_MINI_SPAWNS.length)];
+    _TR_MINI_AGN.push({ x: pos.x, y: pos.y, hp: 15, maxHp: 15, dir: 1, step: 0, hitTimer: 0, hitFlash: 0 });
+  }
+
+  _TR_MINI_ATK_TIMER += s;
+  const pa = _TR_MINI_ATK_TIMER >= 1;
+  if (pa) _TR_MINI_ATK_TIMER = 0;
+
+  for (const a of _TR_MINI_AGN) {
+    if (a.hp <= 0) continue;
+    a.hitFlash = Math.max(0, a.hitFlash - s);
+    const dx = sp.x - a.x, dy = sp.y - a.y, dist = Math.hypot(dx, dy);
+    if (dist > 28 && dist < 450) {
+      const spd = 55 * s;
+      a.x += (dx / dist) * spd; a.y += (dy / dist) * spd;
+      a.dir = dx > 0 ? 1 : -1; a.step += s * 4;
+    } else if (dist <= 28) {
+      a.step += s * 2;
+      a.hitTimer += s;
+      if (a.hitTimer >= 1.5) {
+        a.hitTimer = 0;
+        if (typeof applyZdenerwowanie === 'function') applyZdenerwowanie(3);
+      }
+    }
+    /* Agata atakuje auto co 1s w zasięgu */
+    if (pa && dist < 50) {
+      const dmg = Math.round(8 * (typeof getAtakMult === 'function' ? getAtakMult() : 1));
+      a.hp -= dmg;
+      a.hitFlash = 0.3;
+      if (typeof spawnHitEffect === 'function') spawnHitEffect(a.x, a.y, dmg);
+    }
+  }
+  _TR_MINI_AGN = _TR_MINI_AGN.filter(a => a.hp > 0 && Math.hypot(a.x - sp.x, a.y - sp.y) < 1400);
+}
+
+function _drawMiniAgn(ctx, ts) {
+  for (const a of _TR_MINI_AGN) {
+    if (a.hp <= 0) continue;
+    const bob = Math.sin(a.step) * 2;
+    const x = a.x, y = a.y;
+    ctx.save();
+    if (a.hitFlash > 0) { ctx.globalAlpha = 0.5; }
+    /* cień */
+    ctx.fillStyle = 'rgba(0,0,0,0.12)';
+    ctx.beginPath(); ctx.ellipse(x, y+2, 9, 3, 0, 0, Math.PI*2); ctx.fill();
+    /* włosy */
+    ctx.fillStyle = '#bb6611';
+    ctx.beginPath(); ctx.ellipse(x, y-8+bob, 8, 14, 0, 0, Math.PI*2); ctx.fill();
+    /* sukienka */
+    ctx.fillStyle = '#e044bb';
+    ctx.beginPath();
+    ctx.moveTo(x-6, y-3+bob); ctx.lineTo(x+6, y-3+bob);
+    ctx.lineTo(x+9, y+10+bob); ctx.lineTo(x-9, y+10+bob);
+    ctx.closePath(); ctx.fill();
+    /* twarz */
+    ctx.fillStyle = '#fde8d8';
+    ctx.beginPath(); ctx.arc(x, y-16+bob, 7, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#cc7722';
+    ctx.beginPath(); ctx.arc(x, y-16+bob, 7, Math.PI*0.75, Math.PI*2.25); ctx.fill();
+    ctx.fillStyle = '#6644aa';
+    ctx.beginPath(); ctx.arc(x-2.5, y-17+bob, 1.8, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(x+2.5, y-17+bob, 1.8, 0, Math.PI*2); ctx.fill();
+    ctx.restore();
+    /* HP bar */
+    if (a.hp < a.maxHp) {
+      const bw = 22, bh = 3, bx = x - bw/2, by = y - 32 + bob;
+      ctx.fillStyle = '#500'; ctx.fillRect(bx, by, bw, bh);
+      ctx.fillStyle = '#f44'; ctx.fillRect(bx, by, bw * (a.hp / a.maxHp), bh);
+    }
+    /* napis */
+    ctx.save();
+    ctx.font = 'bold 8px "Segoe UI"'; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillStyle = '#ffaaff'; ctx.shadowColor = '#000'; ctx.shadowBlur = 3;
+    ctx.fillText('mini agnieszka', x, y - 33 + bob);
+    ctx.shadowBlur = 0; ctx.restore();
+  }
+}
+
 /* ═══════════════════════════════════════════════════════
    Quest 2: Wspomnienia z Torunia
    ═══════════════════════════════════════════════════════ */
@@ -36,6 +128,7 @@ const _TR_MEMORY_ZONES = [
 
 /* ── Update ── */
 function updateTorunQuests(dt, subPlayer) {
+  _updateMiniAgn(dt, subPlayer);
   const q   = _TR_QUEST;
   const dtS = dt / 1000;
 
@@ -137,6 +230,7 @@ function drawTorunQuests(ctx, ts) {
     ctx.restore();
   }
 
+  _drawMiniAgn(ctx, ts);
   drawHitFX(ctx);
 }
 

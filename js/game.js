@@ -224,7 +224,32 @@ function _dbgToggle() {
   document.getElementById('debug-overlay').classList.toggle('hidden', !_debugOpen);
 }
 
+function _dbgResetAll() {
+  /* Grudziądz Q1 */
+  _GD_QUEST.state = 'idle'; _GD_QUEST.killed = 0; _GD_QUEST.enemies = [];
+  /* Toruń Q2 */
+  if (typeof _TR_QUEST !== 'undefined') _TR_QUEST.state = 'inactive';
+  /* Zagroda Q3 */
+  if (typeof _CAT_Q !== 'undefined') { _CAT_Q.state = 'hidden'; _CAT_Q.firstCatDone = false; _CAT_Q.menuReady = false; catState.cats = []; }
+  /* Gdańsk Q4-Q9 */
+  if (typeof _GDN_QUEST !== 'undefined') _GDN_QUEST.state = 'inactive';
+  /* Hel Q8 */
+  if (typeof _HEL_QUEST !== 'undefined') { _HEL_QUEST.state = 'inactive'; _HEL_QUEST.kills = 0; }
+  /* Krynica Q10-Q12 */
+  if (typeof _KM_QUEST !== 'undefined') { _KM_QUEST.state = 'inactive'; _KM_QUEST.entryTriggered = false; _KM_QUEST.q10Kills = 0; }
+  if (typeof _RAFAL_WORLD !== 'undefined') _RAFAL_WORLD.active = false;
+  /* Hel Q12 gofry */
+  if (typeof _HEL_Q12 !== 'undefined') _HEL_Q12.state = 'inactive';
+  /* Q13 */
+  if (typeof _GDN_Q13 !== 'undefined') _GDN_Q13.state = 'inactive';
+  /* Q14 boss */
+  if (typeof _GTA_BOSS !== 'undefined') { _GTA_BOSS.state = 'inactive'; _GTA_BOSS.rocks = []; _GTA_BOSS.explodePFX = []; _GTA_BOSS.laserBeam = null; }
+  /* Ending */
+  if (typeof _ENDING !== 'undefined') { _ENDING.state = 'inactive'; _ENDING.playerAlpha = 1; }
+}
+
 function _dbgSet(quest, state) {
+  _dbgResetAll();
   switch (quest) {
     case 'gd':
       _GD_QUEST.state = state;
@@ -238,6 +263,7 @@ function _dbgSet(quest, state) {
       break;
     case 'catq':
       _CAT_Q.state = state;
+      if (state === 'revealed') { _CAT_Q.menuReady = false; _CAT_Q.firstCatDone = false; catState.cats = []; }
       player.x = 1755; player.y = 1828;
       break;
     case 'gdn':
